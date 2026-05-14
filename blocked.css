@@ -6,7 +6,9 @@
 
 body {
   min-height: 100vh;
-  background: #0a0a0f;
+  background:
+    linear-gradient(rgba(10, 10, 15, 0.72), rgba(10, 10, 15, 0.72)),
+    url('images/bg.jpg') center/cover no-repeat fixed;
   display: flex;
   align-items: center;
   justify-content: center;

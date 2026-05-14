@@ -16,27 +16,46 @@ async function getStats() {
 
 function renderSiteList(sites) {
   const list = document.getElementById('siteList');
+  list.innerHTML = '';
+
   if (sites.length === 0) {
-    list.innerHTML = '<p class="empty-state">Henüz site eklenmedi.</p>';
+    const empty = document.createElement('li');
+    empty.className = 'empty-state';
+    empty.textContent = 'Henüz site eklenmedi.';
+    list.appendChild(empty);
     return;
   }
-  list.innerHTML = sites.map((site, i) => `
-    <li class="site-item">
-      <span class="site-source">${site.source}</span>
-      <span class="site-arrow">→</span>
-      <span class="site-target">${site.target}</span>
-      <button class="delete-btn" data-index="${i}" title="Sil">✕</button>
-    </li>
-  `).join('');
 
-  list.querySelectorAll('.delete-btn').forEach(btn => {
+  sites.forEach((site, i) => {
+    const li = document.createElement('li');
+    li.className = 'site-item';
+
+    const source = document.createElement('span');
+    source.className = 'site-source';
+    source.textContent = site.source;
+
+    const arrow = document.createElement('span');
+    arrow.className = 'site-arrow';
+    arrow.textContent = '→';
+
+    const target = document.createElement('span');
+    target.className = 'site-target';
+    target.textContent = site.target;
+
+    const btn = document.createElement('button');
+    btn.className = 'delete-btn';
+    btn.dataset.index = i;
+    btn.title = 'Sil';
+    btn.textContent = '✕';
     btn.addEventListener('click', async () => {
-      const idx = Number(btn.dataset.index);
       const current = await getBlockedSites();
-      current.splice(idx, 1);
+      current.splice(i, 1);
       await saveBlockedSites(current);
       renderSiteList(current);
     });
+
+    li.append(source, arrow, target, btn);
+    list.appendChild(li);
   });
 }
 

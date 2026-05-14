@@ -6,11 +6,12 @@
 
 body {
   min-height: 100vh;
-  background-color: #06060a;
-  background-image: url('images/bg.jpg');
-  background-size: auto 70vh;
-  background-position: center center;
-  background-repeat: no-repeat;
+  background:
+    linear-gradient(135deg,
+      rgba(6, 6, 10, 0.82) 0%,
+      rgba(6, 6, 10, 0.45) 50%,
+      rgba(6, 6, 10, 0.82) 100%),
+    url('images/bg.jpg') center / cover no-repeat fixed;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -19,41 +20,41 @@ body {
 
 .container {
   text-align: center;
-  padding: 2rem;
-  max-width: 560px;
+  padding: 2rem 4rem;
+  max-width: 900px;
+  width: 100%;
 }
 
 .eyebrow {
-  font-family: 'Inter', sans-serif;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 500;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.35);
-  margin-bottom: 1.25rem;
+  color: rgba(255, 255, 255, 0.3);
+  margin-bottom: 2rem;
 }
 
 .headline {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-style: italic;
   font-weight: 700;
-  line-height: 0.95;
-  margin-bottom: 1.75rem;
+  line-height: 0.9;
+  margin-bottom: 2.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 0.1em;
 }
 
 .line1 {
-  font-size: clamp(4rem, 10vw, 6.5rem);
-  background: linear-gradient(135deg, #fbbf24 0%, #f97316 40%, #ec4899 100%);
+  font-size: clamp(5rem, 13vw, 10rem);
+  background: linear-gradient(135deg, #fbbf24 0%, #f97316 50%, #ec4899 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .line2 {
-  font-size: clamp(4.5rem, 12vw, 7.5rem);
+  font-size: clamp(6rem, 15vw, 12rem);
   background: linear-gradient(135deg, #c084fc 0%, #818cf8 50%, #38bdf8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -61,16 +62,16 @@ body {
 }
 
 .sub {
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.45);
-  line-height: 1.7;
-  margin-bottom: 2.5rem;
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.4);
+  line-height: 1.8;
+  margin-bottom: 3rem;
   font-weight: 400;
 }
 
 .cta-btn {
   display: inline-block;
-  padding: 0.9rem 3rem;
+  padding: 1rem 3.5rem;
   background: linear-gradient(135deg, #6366f1, #a855f7);
   color: #fff;
   border: none;
@@ -79,15 +80,14 @@ body {
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  letter-spacing: 0.03em;
-  box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4);
-  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+  letter-spacing: 0.04em;
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.45);
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .cta-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(99, 102, 241, 0.55);
-  opacity: 0.95;
+  box-shadow: 0 14px 44px rgba(99, 102, 241, 0.6);
 }
 
 .cta-btn:active {

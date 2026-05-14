@@ -11,7 +11,7 @@ body {
       rgba(6, 6, 10, 0.82) 0%,
       rgba(6, 6, 10, 0.45) 50%,
       rgba(6, 6, 10, 0.82) 100%),
-    url('images/bg.jpg') center / cover no-repeat fixed;
+    url('images/bg.jpg') center / 85% auto no-repeat fixed;
   display: flex;
   align-items: center;
   justify-content: center;

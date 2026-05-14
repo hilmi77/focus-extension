@@ -2,9 +2,10 @@ export function findMatch(url, blockedSites) {
   if (!blockedSites || blockedSites.length === 0) return null;
   try {
     const hostname = new URL(url).hostname.replace(/^www\./, '');
-    return blockedSites.find(
-      site => hostname.includes(site.source.replace(/^www\./, ''))
-    ) ?? null;
+    return blockedSites.find(site => {
+      const source = site.source.replace(/^www\./, '');
+      return hostname === source || hostname.endsWith('.' + source);
+    }) ?? null;
   } catch {
     return null;
   }

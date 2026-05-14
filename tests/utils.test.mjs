@@ -29,6 +29,17 @@ describe('findMatch', () => {
   });
 });
 
+describe('getDefaultStats', () => {
+  it('varsayılan istatistik yapısını döner', () => {
+    const stats = getDefaultStats();
+    assert.equal(stats.streak, 0);
+    assert.equal(stats.todayCount, 0);
+    assert.equal(stats.todayDate, null);
+    assert.equal(stats.lastBlockedDate, null);
+    assert.deepEqual(stats.history, {});
+  });
+});
+
 describe('incrementStats', () => {
   it('aynı günde sadece sayacı artırır', () => {
     const stats = { ...getDefaultStats(), todayDate: '2026-05-14', todayCount: 2, streak: 3 };

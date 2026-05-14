@@ -162,7 +162,7 @@ canvas {
   flex-direction: column;
   gap: 8px;
 }
-.edit-modal.hidden { display: none; }
+.hidden { display: none !important; }
 
 .edit-title {
   font-size: 0.8rem;

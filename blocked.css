@@ -14,53 +14,86 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: #e2e8f0;
+  font-family: 'Inter', -apple-system, sans-serif;
 }
 
 .container {
   text-align: center;
-  padding: 2rem;
-  max-width: 480px;
+  padding: 3rem 4rem;
+  max-width: 560px;
+  background: rgba(6, 6, 10, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 28px;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6);
 }
 
-.icon {
-  font-size: 4rem;
-  margin-bottom: 1.5rem;
+.eyebrow {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+  margin-bottom: 1.25rem;
 }
 
-.title {
-  font-size: 2.25rem;
+.headline {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
   font-weight: 700;
-  color: #f1f5f9;
-  margin-bottom: 0.75rem;
-  line-height: 1.2;
+  line-height: 0.95;
+  margin-bottom: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
-.subtitle {
-  font-size: 1.125rem;
-  color: #94a3b8;
+.line1 {
+  font-size: clamp(4rem, 10vw, 6.5rem);
+  background: linear-gradient(135deg, #fbbf24 0%, #f97316 40%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.line2 {
+  font-size: clamp(4.5rem, 12vw, 7.5rem);
+  background: linear-gradient(135deg, #c084fc 0%, #818cf8 50%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sub {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.45);
+  line-height: 1.7;
   margin-bottom: 2.5rem;
-  line-height: 1.6;
+  font-weight: 400;
 }
 
 .cta-btn {
   display: inline-block;
-  padding: 0.875rem 2.5rem;
-  background: #6366f1;
+  padding: 0.9rem 3rem;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
   color: #fff;
   border: none;
-  border-radius: 12px;
-  font-size: 1.125rem;
+  border-radius: 100px;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.03em;
+  box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
 }
 
 .cta-btn:hover {
-  background: #4f46e5;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(99, 102, 241, 0.55);
+  opacity: 0.95;
 }
 
 .cta-btn:active {

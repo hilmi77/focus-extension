@@ -71,13 +71,13 @@ function renderSiteList(sites) {
     const editBtn = document.createElement('button');
     editBtn.className = 'edit-btn';
     editBtn.title = 'Düzenle';
-    editBtn.textContent = '✏️';
+    editBtn.textContent = 'düzenle';
     editBtn.addEventListener('click', () => openEdit(i, site));
 
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'delete-btn';
     deleteBtn.title = 'Sil';
-    deleteBtn.textContent = '✕';
+    deleteBtn.textContent = 'sil';
     deleteBtn.addEventListener('click', async () => {
       const current = await getBlockedSites();
       current.splice(i, 1);
@@ -258,7 +258,7 @@ function renderTodoGroups(groups) {
 
     const delBtn = document.createElement('button');
     delBtn.className = 'todo-group-delete';
-    delBtn.textContent = '✕';
+    delBtn.textContent = 'sil';
     delBtn.title = 'Listeyi sil';
     delBtn.addEventListener('click', async () => {
       const groups = await getTodoGroups();
@@ -300,7 +300,7 @@ function renderTodoGroups(groups) {
 
       const del = document.createElement('button');
       del.className = 'todo-delete';
-      del.textContent = '✕';
+      del.textContent = '×';
       del.addEventListener('click', async () => {
         const groups = await getTodoGroups();
         const g = groups.find(g => g.id === group.id);
@@ -346,7 +346,7 @@ function renderTodoGroups(groups) {
 
     const alarmLabel = document.createElement('span');
     alarmLabel.className = 'alarm-label';
-    alarmLabel.textContent = '⏰ Hatırlatıcı:';
+    alarmLabel.textContent = group.alarm ? '⏰ Aktif:' : '⏰ Hatırlatıcı kur:';
 
     const daySelect = document.createElement('select');
     daySelect.className = 'alarm-select';

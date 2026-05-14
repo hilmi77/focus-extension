@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Focus</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="popup">
+
+    <section class="stats">
+      <div class="stat-card">
+        <span class="stat-value" id="streak">0</span>
+        <span class="stat-label">günlük streak 🔥</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value" id="todayCount">0</span>
+        <span class="stat-label">bugün engellendi</span>
+      </div>
+    </section>
+
+    <section class="chart-section">
+      <p class="chart-title">Son 7 gün</p>
+      <canvas id="chart" width="300" height="64"></canvas>
+    </section>
+
+    <div class="divider"></div>
+
+    <section class="sites-section">
+      <p class="section-title">Engellenen siteler</p>
+      <ul class="site-list" id="siteList"></ul>
+    </section>
+
+    <section class="add-section">
+      <div class="input-row">
+        <input type="text" id="sourceInput" class="input" placeholder="instagram.com" />
+        <span class="arrow">→</span>
+        <input type="text" id="targetInput" class="input" placeholder="https://react.dev" />
+      </div>
+      <button class="add-btn" id="addBtn">Ekle</button>
+    </section>
+
+  </div>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

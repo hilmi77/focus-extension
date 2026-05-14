@@ -22,3 +22,19 @@ async function recordBlock() {
   const updated = incrementStats(current, today);
   await chrome.storage.local.set({ stats: updated });
 }
+
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (!alarm.name.startsWith('focus-alarm-')) return;
+  const groupId = alarm.name.replace('focus-alarm-', '');
+  const { todoGroups = [] } = await chrome.storage.local.get({ todoGroups: [] });
+  const group = todoGroups.find(g => g.id === groupId);
+  if (!group) return;
+
+  chrome.notifications.create(`notif-${Date.now()}`, {
+    type: 'basic',
+    iconUrl: chrome.runtime.getURL('icons/icon48.png'),
+    title: '🎯 Focus Hatırlatma',
+    message: group.title,
+    priority: 2
+  });
+});

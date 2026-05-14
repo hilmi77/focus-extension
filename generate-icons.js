@@ -25,23 +25,57 @@ function chunk(type, data) {
   return Buffer.concat([len, t, data, crcVal]);
 }
 
-function createPNG(size, r, g, b) {
+function createFocusPNG(size) {
   const sig = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
   const ihdr = chunk('IHDR', Buffer.concat([
     uint32BE(size), uint32BE(size),
-    Buffer.from([8, 2, 0, 0, 0])
+    Buffer.from([8, 6, 0, 0, 0]) // 8-bit RGBA
   ]));
+
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = size * 0.42;
+  const cornerR = size * 0.22;
+  const squareR = size * 0.49;
+
   const rows = [];
   for (let y = 0; y < size; y++) {
-    const row = Buffer.alloc(1 + size * 3);
+    const row = Buffer.alloc(1 + size * 4);
     row[0] = 0;
     for (let x = 0; x < size; x++) {
-      row[1 + x * 3] = r;
-      row[2 + x * 3] = g;
-      row[3 + x * 3] = b;
+      const dx = x - cx;
+      const dy = y - cy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const px = Math.abs(dx);
+      const py = Math.abs(dy);
+
+      let inside = false;
+      if (px <= squareR && py <= squareR) {
+        if (px <= squareR - cornerR || py <= squareR - cornerR) {
+          inside = true;
+        } else {
+          const cdx = px - (squareR - cornerR);
+          const cdy = py - (squareR - cornerR);
+          inside = Math.sqrt(cdx * cdx + cdy * cdy) <= cornerR;
+        }
+      }
+
+      const off = 1 + x * 4;
+      if (!inside) {
+        row[off] = 0; row[off + 1] = 0; row[off + 2] = 0; row[off + 3] = 0;
+      } else if (dist <= r * 0.12) {
+        row[off] = 255; row[off + 1] = 255; row[off + 2] = 255; row[off + 3] = 255;
+      } else if (dist >= r * 0.35 && dist <= r * 0.52) {
+        row[off] = 165; row[off + 1] = 180; row[off + 2] = 252; row[off + 3] = 255;
+      } else if (dist >= r * 0.74 && dist <= r) {
+        row[off] = 99; row[off + 1] = 102; row[off + 2] = 241; row[off + 3] = 255;
+      } else {
+        row[off] = 30; row[off + 1] = 27; row[off + 2] = 75; row[off + 3] = 255;
+      }
     }
     rows.push(row);
   }
+
   const idat = chunk('IDAT', zlib.deflateSync(Buffer.concat(rows)));
   const iend = chunk('IEND', Buffer.alloc(0));
   return Buffer.concat([sig, ihdr, idat, iend]);
@@ -49,6 +83,6 @@ function createPNG(size, r, g, b) {
 
 fs.mkdirSync('icons', { recursive: true });
 [16, 48, 128].forEach(size => {
-  fs.writeFileSync(`icons/icon${size}.png`, createPNG(size, 99, 102, 241));
+  fs.writeFileSync(`icons/icon${size}.png`, createFocusPNG(size));
   console.log(`✓ icon${size}.png`);
 });

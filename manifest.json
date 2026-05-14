@@ -3,7 +3,7 @@
   "name": "Focus",
   "version": "1.0.0",
   "description": "Dikkat dağıtıcı siteleri engelle, üretken sitelere yönlen.",
-  "permissions": ["storage", "webNavigation", "tabs"],
+  "permissions": ["storage", "webNavigation", "tabs", "alarms", "notifications"],
   "background": {
     "service_worker": "background.js",
     "type": "module"

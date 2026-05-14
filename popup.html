@@ -8,37 +8,74 @@
 <body>
   <div class="popup">
 
-    <section class="stats">
-      <div class="stat-card">
-        <span class="stat-value" id="streak">0</span>
-        <span class="stat-label">günlük streak 🔥</span>
+    <div class="tab-bar">
+      <button class="tab active" data-tab="focus">🎯 Odak</button>
+      <button class="tab" data-tab="todos">✅ Görevler</button>
+    </div>
+
+    <!-- Odak sekmesi -->
+    <div class="tab-content" id="tab-focus">
+
+      <section class="stats">
+        <div class="stat-card" title="Kaç gündür her gün odaklı çalışıyorsun. Bir gün atlarsanız sıfırlanır.">
+          <span class="stat-value" id="streak">0</span>
+          <span class="stat-label">🔥 gün serisi</span>
+          <span class="stat-hint">art arda odak günü</span>
+        </div>
+        <div class="stat-card" title="Bugün sosyal medyaya girmeye kaç kez yönlendirildin.">
+          <span class="stat-value" id="todayCount">0</span>
+          <span class="stat-label">🚫 bugün</span>
+          <span class="stat-hint">engelleme sayısı</span>
+        </div>
+      </section>
+
+      <section class="chart-section">
+        <p class="chart-title">Son 7 günlük engelleme</p>
+        <canvas id="chart" width="300" height="64"></canvas>
+      </section>
+
+      <div class="divider"></div>
+
+      <section class="sites-section">
+        <p class="section-title">Engellenen siteler</p>
+        <ul class="site-list" id="siteList"></ul>
+      </section>
+
+      <div class="edit-modal hidden" id="editModal">
+        <p class="edit-title">✏️ Düzenle</p>
+        <div class="input-row">
+          <input type="text" id="editSource" class="input" placeholder="instagram.com" />
+          <span class="arrow">→</span>
+          <input type="text" id="editTarget" class="input" placeholder="https://react.dev" />
+        </div>
+        <div class="edit-actions">
+          <button class="cancel-btn" id="editCancelBtn">İptal</button>
+          <button class="add-btn" id="editSaveBtn">Kaydet</button>
+        </div>
       </div>
-      <div class="stat-card">
-        <span class="stat-value" id="todayCount">0</span>
-        <span class="stat-label">bugün engellendi</span>
+
+      <section class="add-section" id="addSection">
+        <div class="input-row">
+          <input type="text" id="sourceInput" class="input" placeholder="instagram.com" />
+          <span class="arrow">→</span>
+          <input type="text" id="targetInput" class="input" placeholder="https://react.dev" />
+        </div>
+        <button class="add-btn" id="addBtn">+ Ekle</button>
+      </section>
+
+    </div>
+
+    <!-- Görevler sekmesi -->
+    <div class="tab-content hidden" id="tab-todos">
+
+      <div class="todo-groups" id="todoGroups"></div>
+
+      <div class="add-group-form">
+        <input type="text" id="groupTitleInput" class="input" placeholder="Liste başlığı (örn: Bu hafta)" />
+        <button class="add-btn" id="addGroupBtn">+ Liste oluştur</button>
       </div>
-    </section>
 
-    <section class="chart-section">
-      <p class="chart-title">Son 7 gün</p>
-      <canvas id="chart" width="300" height="64"></canvas>
-    </section>
-
-    <div class="divider"></div>
-
-    <section class="sites-section">
-      <p class="section-title">Engellenen siteler</p>
-      <ul class="site-list" id="siteList"></ul>
-    </section>
-
-    <section class="add-section">
-      <div class="input-row">
-        <input type="text" id="sourceInput" class="input" placeholder="instagram.com" />
-        <span class="arrow">→</span>
-        <input type="text" id="targetInput" class="input" placeholder="https://react.dev" />
-      </div>
-      <button class="add-btn" id="addBtn">Ekle</button>
-    </section>
+    </div>
 
   </div>
   <script type="module" src="popup.js"></script>

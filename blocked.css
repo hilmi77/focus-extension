@@ -19,14 +19,8 @@ body {
 
 .container {
   text-align: center;
-  padding: 3rem 4rem;
+  padding: 2rem;
   max-width: 560px;
-  background: rgba(6, 6, 10, 0.55);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 28px;
-  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6);
 }
 
 .eyebrow {

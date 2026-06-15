@@ -12,11 +12,43 @@ body {
 }
 
 .popup {
-  padding: 16px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
+
+/* ── Tabs ────────────────────────────────────────────────────── */
+.tab-bar {
+  display: flex;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+  padding: 0 16px;
+  gap: 0;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px 0;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+}
+.tab-btn:hover { color: #6366f1; }
+.tab-btn.active { color: #6366f1; border-bottom-color: #6366f1; }
+
+.tab-panel {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+.tab-panel.active { display: flex; }
 
 .stats {
   display: flex;
@@ -232,3 +264,269 @@ canvas {
   transition: background 0.15s;
 }
 .add-btn:hover { background: #4f46e5; }
+
+/* ── Goal ────────────────────────────────────────────────────── */
+.goal-section {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.goal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.goal-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.goal-input-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+.goal-input-row input[type="number"] {
+  width: 40px;
+  padding: 3px 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  color: #1e293b;
+  background: #f8fafc;
+  outline: none;
+}
+.goal-input-row input[type="number"]:focus { border-color: #6366f1; }
+.goal-unit { font-size: 0.72rem; }
+
+.goal-bar-track {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.goal-bar-fill {
+  height: 100%;
+  background: #6366f1;
+  border-radius: 99px;
+  width: 0%;
+  transition: width 0.4s ease;
+}
+.goal-bar-fill.done { background: #22c55e; }
+
+.goal-progress-text {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  text-align: right;
+}
+
+/* ── Notes ──────────────────────────────────────────────────── */
+.notes-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notes-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.note-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  border-radius: 8px;
+  transition: background 0.1s;
+}
+.note-item:hover { background: #f1f5f9; }
+
+.note-check {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid #c7d2fe;
+  flex-shrink: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.note-check:hover { border-color: #6366f1; }
+.note-item.done .note-check {
+  background: #6366f1;
+  border-color: #6366f1;
+}
+.note-item.done .note-check::after {
+  content: '';
+  display: block;
+  width: 5px;
+  height: 8px;
+  border: 2px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+.note-text {
+  flex: 1;
+  font-size: 0.875rem;
+  color: #1e293b;
+  line-height: 1.4;
+  transition: color 0.15s;
+}
+.note-item.done .note-text {
+  text-decoration: line-through;
+  color: #94a3b8;
+}
+
+.note-delete {
+  background: none;
+  border: none;
+  color: #cbd5e1;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+}
+.note-item:hover .note-delete { opacity: 1; }
+.note-delete:hover { color: #ef4444; }
+
+.notes-input-row {
+  display: flex;
+  gap: 6px;
+}
+
+.notes-add-btn {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.notes-add-btn:hover { background: #4f46e5; }
+
+/* ── Pomodoro ───────────────────────────────────────────────── */
+.pomodoro-section {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.pomodoro-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pomo-phase {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6366f1;
+}
+.pomo-phase.break { color: #22c55e; }
+.pomo-phase.longBreak { color: #f59e0b; }
+
+.pomo-rounds { display: flex; gap: 5px; }
+.round-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  transition: background 0.2s;
+}
+.round-dot.done { background: #6366f1; }
+
+.pomo-timer {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.pomo-controls { display: flex; gap: 8px; width: 100%; }
+
+.pomo-btn {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.pomo-start { background: #6366f1; color: #fff; }
+.pomo-start:hover { background: #4f46e5; }
+.pomo-stop { background: #fee2e2; color: #ef4444; }
+.pomo-stop:hover { background: #fecaca; }
+
+.pomo-settings {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  width: 100%;
+}
+
+.pomo-setting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.68rem;
+  color: #64748b;
+  cursor: default;
+}
+.pomo-setting-label {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  text-align: center;
+  line-height: 1.2;
+}
+.pomo-setting input[type="number"] {
+  width: 48px;
+  padding: 4px 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: center;
+  color: #1e293b;
+  background: #f8fafc;
+  outline: none;
+}
+.pomo-setting input[type="number"]:focus { border-color: #6366f1; }

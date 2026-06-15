@@ -8,52 +8,115 @@
 <body>
   <div class="popup">
 
-    <section class="stats">
-      <div class="stat-card" title="Kaç gündür her gün odaklı çalışıyorsun.">
-        <span class="stat-value" id="streak">0</span>
-        <span class="stat-label">🔥 gün serisi</span>
-        <span class="stat-hint">art arda odak günü</span>
-      </div>
-      <div class="stat-card" title="Bugün kaç kez yönlendirildin.">
-        <span class="stat-value" id="todayCount">0</span>
-        <span class="stat-label">🚫 bugün</span>
-        <span class="stat-hint">engelleme sayısı</span>
-      </div>
-    </section>
+    <nav class="tab-bar">
+      <button class="tab-btn active" data-tab="focus">Odak</button>
+      <button class="tab-btn" data-tab="notes">Notlar</button>
+      <button class="tab-btn" data-tab="sites">Siteler</button>
+    </nav>
 
-    <section class="chart-section">
-      <p class="chart-title">Son 7 günlük engelleme</p>
-      <canvas id="chart" width="300" height="64"></canvas>
-    </section>
+    <!-- ── Odak ── -->
+    <div class="tab-panel active" id="tab-focus">
 
-    <div class="divider"></div>
+      <section class="pomodoro-section" id="pomoSection">
+        <div class="pomodoro-header">
+          <span class="pomo-phase" id="pomoPhase">Hazır</span>
+          <span class="pomo-rounds" id="pomoRounds">
+            <span class="round-dot" data-idx="0"></span>
+            <span class="round-dot" data-idx="1"></span>
+            <span class="round-dot" data-idx="2"></span>
+            <span class="round-dot" data-idx="3"></span>
+          </span>
+        </div>
+        <div class="pomo-timer" id="pomoTimer">25:00</div>
+        <div class="pomo-controls">
+          <button class="pomo-btn pomo-start" id="pomoStartBtn">Başlat</button>
+          <button class="pomo-btn pomo-stop hidden" id="pomoStopBtn">Durdur</button>
+        </div>
+        <div class="pomo-settings">
+          <label class="pomo-setting">
+            <span class="pomo-setting-label">Çalışma</span>
+            <input type="number" id="pomoWorkMins" min="1" max="120" value="25" />
+            <span>dk</span>
+          </label>
+          <label class="pomo-setting">
+            <span class="pomo-setting-label">Mola</span>
+            <input type="number" id="pomoBreakMins" min="1" max="60" value="5" />
+            <span>dk</span>
+          </label>
+          <label class="pomo-setting">
+            <span class="pomo-setting-label">Uzun mola</span>
+            <input type="number" id="pomoLongMins" min="1" max="120" value="15" />
+            <span>dk</span>
+          </label>
+        </div>
+      </section>
 
-    <section class="sites-section">
-      <p class="section-title">Engellenen siteler</p>
-      <ul class="site-list" id="siteList"></ul>
-    </section>
+      <section class="stats">
+        <div class="stat-card">
+          <span class="stat-value" id="todayRounds">0</span>
+          <span class="stat-label">🍅 bugün</span>
+          <span class="stat-hint">tamamlanan tur</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="todayFocusMins">0</span>
+          <span class="stat-label">⏱ odak</span>
+          <span class="stat-hint">dakika bugün</span>
+        </div>
+      </section>
 
-    <div class="edit-modal hidden" id="editModal">
-      <p class="edit-title">Düzenle</p>
-      <div class="input-row">
-        <input type="text" id="editSource" class="input" placeholder="instagram.com" />
-        <span class="arrow">→</span>
-        <input type="text" id="editTarget" class="input" placeholder="https://react.dev" />
-      </div>
-      <div class="edit-actions">
-        <button class="cancel-btn" id="editCancelBtn">İptal</button>
-        <button class="add-btn" id="editSaveBtn">Kaydet</button>
+      <section class="goal-section">
+        <div class="goal-header">
+          <span class="goal-label">Günlük hedef</span>
+          <div class="goal-input-row">
+            <input type="number" id="goalInput" min="1" max="20" value="8" />
+            <span class="goal-unit">tur</span>
+          </div>
+        </div>
+        <div class="goal-bar-track">
+          <div class="goal-bar-fill" id="goalBarFill"></div>
+        </div>
+        <p class="goal-progress-text" id="goalProgressText">0 / 8 tur tamamlandı</p>
+      </section>
+
+    </div>
+
+    <!-- ── Notlar ── -->
+    <div class="tab-panel" id="tab-notes">
+      <ul class="notes-list" id="notesList"></ul>
+      <div class="notes-input-row">
+        <input type="text" id="noteInput" class="input" placeholder="Yeni not ekle…" />
+        <button class="notes-add-btn" id="noteAddBtn">+</button>
       </div>
     </div>
 
-    <section class="add-section" id="addSection">
-      <div class="input-row">
-        <input type="text" id="sourceInput" class="input" placeholder="instagram.com" />
-        <span class="arrow">→</span>
-        <input type="text" id="targetInput" class="input" placeholder="https://react.dev" />
+    <!-- ── Siteler ── -->
+    <div class="tab-panel" id="tab-sites">
+
+      <ul class="site-list" id="siteList"></ul>
+
+      <div class="edit-modal hidden" id="editModal">
+        <p class="edit-title">Düzenle</p>
+        <div class="input-row">
+          <input type="text" id="editSource" class="input" placeholder="instagram.com" />
+          <span class="arrow">→</span>
+          <input type="text" id="editTarget" class="input" placeholder="https://react.dev" />
+        </div>
+        <div class="edit-actions">
+          <button class="cancel-btn" id="editCancelBtn">İptal</button>
+          <button class="add-btn" id="editSaveBtn">Kaydet</button>
+        </div>
       </div>
-      <button class="add-btn" id="addBtn">Ekle</button>
-    </section>
+
+      <section class="add-section" id="addSection">
+        <div class="input-row">
+          <input type="text" id="sourceInput" class="input" placeholder="instagram.com" />
+          <span class="arrow">→</span>
+          <input type="text" id="targetInput" class="input" placeholder="https://react.dev" />
+        </div>
+        <button class="add-btn" id="addBtn">Ekle</button>
+      </section>
+
+    </div>
 
   </div>
   <script type="module" src="popup.js"></script>

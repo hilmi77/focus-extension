@@ -1,4 +1,15 @@
-import { getDefaultStats } from './utils.js';
+import { getState, startPomodoro, stopPomodoro, updateSettings, getPomodoroStats } from './pomodoro.js';
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
 
 async function getBlockedSites() {
   const { blockedSites = [] } = await chrome.storage.sync.get({ blockedSites: [] });
@@ -10,9 +21,79 @@ async function saveBlockedSites(sites) {
 }
 
 async function getStats() {
-  const { stats } = await chrome.storage.local.get({ stats: null });
-  return stats ?? getDefaultStats();
+  return getPomodoroStats();
 }
+
+// ── Notes ─────────────────────────────────────────────────────────────────────
+
+async function getNotes() {
+  const { notes = [] } = await chrome.storage.local.get({ notes: [] });
+  return notes;
+}
+
+async function saveNotes(notes) {
+  await chrome.storage.local.set({ notes });
+}
+
+function renderNotes(notes) {
+  const list = document.getElementById('notesList');
+  list.innerHTML = '';
+  notes.forEach((note, i) => {
+    const li = document.createElement('li');
+    li.className = 'note-item' + (note.done ? ' done' : '');
+
+    const check = document.createElement('span');
+    check.className = 'note-check';
+    check.addEventListener('click', async () => {
+      const current = await getNotes();
+      current[i].done = !current[i].done;
+      await saveNotes(current);
+      renderNotes(current);
+    });
+
+    const text = document.createElement('span');
+    text.className = 'note-text';
+    text.textContent = note.text;
+
+    const del = document.createElement('button');
+    del.className = 'note-delete';
+    del.textContent = '×';
+    del.title = 'Sil';
+    del.addEventListener('click', async () => {
+      const current = await getNotes();
+      current.splice(i, 1);
+      await saveNotes(current);
+      renderNotes(current);
+    });
+
+    li.append(check, text, del);
+    list.appendChild(li);
+  });
+}
+
+async function addNote(text) {
+  const current = await getNotes();
+  current.push({ text, done: false });
+  await saveNotes(current);
+  renderNotes(current);
+}
+
+document.getElementById('noteAddBtn').addEventListener('click', async () => {
+  const input = document.getElementById('noteInput');
+  const text = input.value.trim();
+  if (!text) return;
+  await addNote(text);
+  input.value = '';
+});
+
+document.getElementById('noteInput').addEventListener('keydown', async (e) => {
+  if (e.key !== 'Enter') return;
+  const input = e.target;
+  const text = input.value.trim();
+  if (!text) return;
+  await addNote(text);
+  input.value = '';
+});
 
 // ── Site list ────────────────────────────────────────────────────────────────
 
@@ -118,64 +199,140 @@ document.getElementById('addBtn').addEventListener('click', async () => {
   targetInput.value = '';
 });
 
-// ── Stats & chart ─────────────────────────────────────────────────────────────
+// ── Goal ──────────────────────────────────────────────────────────────────────
 
-function renderStats(stats) {
-  document.getElementById('streak').textContent = stats.streak;
-  document.getElementById('todayCount').textContent = stats.todayCount;
-  drawChart(stats);
+async function getGoal() {
+  const { dailyGoal = 8 } = await chrome.storage.local.get({ dailyGoal: 8 });
+  return dailyGoal;
 }
 
-function getLast7Days(today) {
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today + 'T12:00:00');
-    d.setDate(d.getDate() - (6 - i));
-    return d.toISOString().split('T')[0];
+function renderGoal(todayRounds, goal) {
+  const pct = Math.min(100, Math.round((todayRounds / goal) * 100));
+  const fill = document.getElementById('goalBarFill');
+  const text = document.getElementById('goalProgressText');
+  fill.style.width = pct + '%';
+  fill.classList.toggle('done', todayRounds >= goal);
+  text.textContent = `${todayRounds} / ${goal} tur tamamlandı`;
+  document.getElementById('goalInput').value = goal;
+}
+
+document.getElementById('goalInput').addEventListener('change', async (e) => {
+  const val = Math.max(1, Math.min(20, parseInt(e.target.value) || 1));
+  e.target.value = val;
+  await chrome.storage.local.set({ dailyGoal: val });
+  const { todayRounds } = await getPomodoroStats();
+  renderGoal(todayRounds, val);
+});
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+
+function renderStats({ todayRounds, todayFocusMins }) {
+  document.getElementById('todayRounds').textContent = todayRounds;
+  document.getElementById('todayFocusMins').textContent = todayFocusMins;
+}
+
+// ── Pomodoro UI ───────────────────────────────────────────────────────────────
+
+const PHASE_LABELS = { work: 'Çalışıyor', break: 'Mola', longBreak: 'Uzun Mola' };
+
+let pomodoroTick = null;
+
+function renderPomodoro(state) {
+  const phaseEl = document.getElementById('pomoPhase');
+  const timerEl = document.getElementById('pomoTimer');
+  const startBtn = document.getElementById('pomoStartBtn');
+  const stopBtn = document.getElementById('pomoStopBtn');
+  const dots = document.querySelectorAll('.round-dot');
+
+  phaseEl.textContent = state.active ? PHASE_LABELS[state.phase] : 'Hazır';
+  phaseEl.className = 'pomo-phase' + (state.active ? ' ' + state.phase : '');
+
+  dots.forEach((dot, i) => {
+    dot.classList.toggle('done', i < state.round - 1);
   });
+
+  if (state.active && state.endTime) {
+    const remaining = Math.max(0, state.endTime - Date.now());
+    timerEl.textContent = formatMs(remaining);
+    startBtn.classList.add('hidden');
+    stopBtn.classList.remove('hidden');
+  } else {
+    const { settings, phase } = state;
+    const mins = phase === 'work' ? settings.workMins
+               : phase === 'break' ? settings.breakMins
+               : settings.longBreakMins;
+    timerEl.textContent = `${String(mins).padStart(2, '0')}:00`;
+    startBtn.classList.remove('hidden');
+    stopBtn.classList.add('hidden');
+  }
+
+  document.getElementById('pomoWorkMins').value = state.settings.workMins;
+  document.getElementById('pomoBreakMins').value = state.settings.breakMins;
+  document.getElementById('pomoLongMins').value = state.settings.longBreakMins;
 }
 
-function drawChart(stats) {
-  const canvas = document.getElementById('chart');
-  const ctx = canvas.getContext('2d');
-  const W = 300;
-  const H = 64;
-  canvas.width = W;
-  canvas.height = H;
+function formatMs(ms) {
+  const total = Math.ceil(ms / 1000);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
 
-  const today = new Date().toISOString().split('T')[0];
-  const days = getLast7Days(today);
-  const history = { ...stats.history };
-  if (stats.todayDate === today) history[today] = stats.todayCount;
+function startTick(initialState) {
+  clearInterval(pomodoroTick);
+  if (!initialState.active || !initialState.endTime) return;
+  let lastPhase = initialState.phase;
+  pomodoroTick = setInterval(async () => {
+    const current = await getState();
+    if (!current.active || !current.endTime) {
+      clearInterval(pomodoroTick);
+      renderPomodoro(current);
+      return;
+    }
+    if (current.phase !== lastPhase) {
+      lastPhase = current.phase;
+      renderPomodoro(current);
+    }
+    document.getElementById('pomoTimer').textContent =
+      formatMs(Math.max(0, current.endTime - Date.now()));
+  }, 1000);
+}
 
-  const values = days.map(d => history[d] ?? 0);
-  const max = Math.max(...values, 1);
-  const barW = 30;
-  const gap = Math.floor((W - barW * 7) / 8);
-  const labelH = 14;
-  const chartH = H - labelH;
+document.getElementById('pomoStartBtn').addEventListener('click', async () => {
+  await startPomodoro();
+  const state = await getState();
+  renderPomodoro(state);
+  startTick(state);
+});
 
-  days.forEach((day, i) => {
-    const val = values[i];
-    const barH = Math.max(4, Math.floor((chartH - 8) * val / max));
-    const x = gap + i * (barW + gap);
-    const y = chartH - barH;
-    ctx.fillStyle = day === today ? '#6366f1' : '#c7d2fe';
-    ctx.beginPath();
-    ctx.roundRect(x, y, barW, barH, 3);
-    ctx.fill();
-    const label = new Date(day + 'T12:00:00')
-      .toLocaleDateString('tr-TR', { weekday: 'narrow' });
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '9px system-ui';
-    ctx.textAlign = 'center';
-    ctx.fillText(label, x + barW / 2, H - 2);
+document.getElementById('pomoStopBtn').addEventListener('click', async () => {
+  clearInterval(pomodoroTick);
+  await stopPomodoro();
+  const state = await getState();
+  renderPomodoro(state);
+});
+
+['pomoWorkMins', 'pomoBreakMins', 'pomoLongMins'].forEach(id => {
+  document.getElementById(id).addEventListener('change', async (e) => {
+    const val = Math.max(1, parseInt(e.target.value) || 1);
+    e.target.value = val;
+    const key = id === 'pomoWorkMins' ? 'workMins'
+              : id === 'pomoBreakMins' ? 'breakMins'
+              : 'longBreakMins';
+    await updateSettings({ [key]: val });
   });
-}
+});
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 
 (async () => {
-  const [sites, stats] = await Promise.all([getBlockedSites(), getStats()]);
+  const [sites, stats, pomoState, notes, goal] = await Promise.all([
+    getBlockedSites(), getStats(), getState(), getNotes(), getGoal()
+  ]);
   renderSiteList(sites);
   renderStats(stats);
+  renderPomodoro(pomoState);
+  startTick(pomoState);
+  renderNotes(notes);
+  renderGoal(stats.todayRounds, goal);
 })();

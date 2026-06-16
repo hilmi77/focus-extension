@@ -1,4 +1,4 @@
-import { getState, startPomodoro, stopPomodoro, updateSettings, getPomodoroStats } from './pomodoro.js';
+import { getState, startPomodoro, stopPomodoro, pausePomodoro, resumePomodoro, updateSettings, getPomodoroStats } from './pomodoro.js';
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
@@ -303,29 +303,49 @@ function renderPomodoro(state) {
   const phaseEl = document.getElementById('pomoPhase');
   const timerEl = document.getElementById('pomoTimer');
   const startBtn = document.getElementById('pomoStartBtn');
-  const stopBtn = document.getElementById('pomoStopBtn');
+  const pauseBtn = document.getElementById('pomoPauseBtn');
+  const resumeBtn = document.getElementById('pomoResumeBtn');
+  const resetBtn = document.getElementById('pomoResetBtn');
   const dots = document.querySelectorAll('.round-dot');
 
-  phaseEl.textContent = state.active ? PHASE_LABELS[state.phase] : 'Hazır';
-  phaseEl.className = 'pomo-phase' + (state.active ? ' ' + state.phase : '');
+  if (state.active) {
+    phaseEl.textContent = PHASE_LABELS[state.phase];
+  } else if (state.paused) {
+    phaseEl.textContent = `${PHASE_LABELS[state.phase]} — Duraklatıldı`;
+  } else {
+    phaseEl.textContent = 'Hazır';
+  }
+  phaseEl.className = 'pomo-phase' + (state.active || state.paused ? ' ' + state.phase : '');
 
   dots.forEach((dot, i) => {
     dot.classList.toggle('done', i < state.round - 1);
   });
 
   if (state.active && state.endTime) {
-    const remaining = Math.max(0, state.endTime - Date.now());
-    timerEl.textContent = formatMs(remaining);
+    timerEl.textContent = formatMs(Math.max(0, state.endTime - Date.now()));
+    timerEl.classList.remove('paused');
     startBtn.classList.add('hidden');
-    stopBtn.classList.remove('hidden');
+    pauseBtn.classList.remove('hidden');
+    resumeBtn.classList.add('hidden');
+    resetBtn.classList.remove('hidden');
+  } else if (state.paused && state.remainingMs != null) {
+    timerEl.textContent = formatMs(state.remainingMs);
+    timerEl.classList.add('paused');
+    startBtn.classList.add('hidden');
+    pauseBtn.classList.add('hidden');
+    resumeBtn.classList.remove('hidden');
+    resetBtn.classList.remove('hidden');
   } else {
     const { settings, phase } = state;
     const mins = phase === 'work' ? settings.workMins
                : phase === 'break' ? settings.breakMins
                : settings.longBreakMins;
     timerEl.textContent = `${String(mins).padStart(2, '0')}:00`;
+    timerEl.classList.remove('paused');
     startBtn.classList.remove('hidden');
-    stopBtn.classList.add('hidden');
+    pauseBtn.classList.add('hidden');
+    resumeBtn.classList.add('hidden');
+    resetBtn.classList.add('hidden');
   }
 
   document.getElementById('pomoWorkMins').value = state.settings.workMins;
@@ -368,7 +388,23 @@ document.getElementById('pomoStartBtn').addEventListener('click', async () => {
   startTick(state);
 });
 
-document.getElementById('pomoStopBtn').addEventListener('click', async () => {
+document.getElementById('pomoPauseBtn').addEventListener('click', async () => {
+  clearInterval(pomodoroTick);
+  await pausePomodoro();
+  chrome.runtime.sendMessage({ type: 'POMO_PAUSED' });
+  const state = await getState();
+  renderPomodoro(state);
+});
+
+document.getElementById('pomoResumeBtn').addEventListener('click', async () => {
+  await resumePomodoro();
+  chrome.runtime.sendMessage({ type: 'POMO_RESUMED' });
+  const state = await getState();
+  renderPomodoro(state);
+  startTick(state);
+});
+
+document.getElementById('pomoResetBtn').addEventListener('click', async () => {
   clearInterval(pomodoroTick);
   await stopPomodoro();
   chrome.runtime.sendMessage({ type: 'POMO_STOPPED' });

@@ -70,6 +70,8 @@ async function stopWhiteNoise() {
 
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'POMO_STARTED') playWhiteNoise();
+  if (msg.type === 'POMO_PAUSED') stopWhiteNoise();
+  if (msg.type === 'POMO_RESUMED') playWhiteNoise();
   if (msg.type === 'POMO_STOPPED') stopWhiteNoise();
 });
 

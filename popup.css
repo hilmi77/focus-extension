@@ -540,6 +540,25 @@ canvas {
 }
 .round-dot.done { background: #6366f1; }
 
+.pomo-timer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pomo-reset-btn {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: color 0.15s, background 0.15s;
+}
+.pomo-reset-btn:hover { color: #ef4444; background: #fee2e2; }
+
 .pomo-timer {
   font-size: 2.5rem;
   font-weight: 700;
@@ -547,6 +566,10 @@ canvas {
   letter-spacing: 0.04em;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+}
+
+.pomo-timer.paused {
+  opacity: 0.45;
 }
 
 .pomo-controls { display: flex; gap: 8px; width: 100%; }
@@ -563,8 +586,11 @@ canvas {
 }
 .pomo-start { background: #6366f1; color: #fff; }
 .pomo-start:hover { background: #4f46e5; }
-.pomo-stop { background: #fee2e2; color: #ef4444; }
-.pomo-stop:hover { background: #fecaca; }
+.pomo-pause { background: #fee2e2; color: #ef4444; }
+.pomo-pause:hover { background: #fecaca; }
+
+.pomo-resume { background: #dcfce7; color: #16a34a; }
+.pomo-resume:hover { background: #bbf7d0; }
 
 .pomo-settings {
   display: grid;

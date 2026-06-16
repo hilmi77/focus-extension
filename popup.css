@@ -68,20 +68,24 @@ body {
 }
 
 .stat-value {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: #6366f1;
   line-height: 1;
 }
 
+.stat-value--sm {
+  font-size: 0.95rem;
+}
+
 .stat-label {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   color: #1e293b;
   font-weight: 500;
 }
 
 .stat-hint {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   color: #94a3b8;
 }
 
@@ -288,6 +292,12 @@ canvas {
   color: #64748b;
 }
 
+.goal-sublabel {
+  font-size: 0.62rem;
+  color: #94a3b8;
+  margin-top: 1px;
+}
+
 .goal-input-row {
   display: flex;
   align-items: center;
@@ -296,8 +306,8 @@ canvas {
   color: #64748b;
 }
 .goal-input-row input[type="number"] {
-  width: 40px;
-  padding: 3px 6px;
+  width: 48px;
+  padding: 3px 4px;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
   font-size: 0.8rem;
@@ -306,6 +316,11 @@ canvas {
   color: #1e293b;
   background: #f8fafc;
   outline: none;
+  -moz-appearance: textfield;
+}
+.goal-input-row input[type="number"]::-webkit-inner-spin-button,
+.goal-input-row input[type="number"]::-webkit-outer-spin-button {
+  opacity: 1;
 }
 .goal-input-row input[type="number"]:focus { border-color: #6366f1; }
 .goal-unit { font-size: 0.72rem; }
@@ -325,13 +340,69 @@ canvas {
 }
 .goal-bar-fill.done { background: #22c55e; }
 
+.goal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.goal-hint {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
 .goal-progress-text {
   font-size: 0.7rem;
   color: #94a3b8;
-  text-align: right;
 }
 
+.goal-progress-text.done {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.goal-reset-btn {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.goal-reset-btn:hover { color: #ef4444; }
+
 /* ── Notes ──────────────────────────────────────────────────── */
+.notes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px 0;
+}
+
+.notes-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.notes-clear-btn {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.notes-clear-btn:hover { color: #ef4444; }
+
 .notes-section {
   display: flex;
   flex-direction: column;

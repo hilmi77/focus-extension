@@ -42,17 +42,36 @@ async function recordBlock() {
   await chrome.storage.local.set({ stats: updated });
 }
 
-async function playSound() {
+async function ensureOffscreen() {
   const existing = await chrome.offscreen.hasDocument();
   if (!existing) {
     await chrome.offscreen.createDocument({
       url: chrome.runtime.getURL('offscreen.html'),
       reasons: ['AUDIO_PLAYBACK'],
-      justification: 'Pomodoro faz geçişi ses bildirimi',
+      justification: 'Pomodoro ses işlemleri',
     });
   }
+}
+
+async function playSound() {
+  await ensureOffscreen();
   chrome.runtime.sendMessage({ type: 'PLAY_SOUND' });
 }
+
+async function playWhiteNoise(volume) {
+  await ensureOffscreen();
+  chrome.runtime.sendMessage({ type: 'START_WHITE_NOISE', volume });
+}
+
+async function stopWhiteNoise() {
+  const existing = await chrome.offscreen.hasDocument();
+  if (existing) chrome.runtime.sendMessage({ type: 'STOP_WHITE_NOISE' });
+}
+
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === 'POMO_STARTED') playWhiteNoise();
+  if (msg.type === 'POMO_STOPPED') stopWhiteNoise();
+});
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name.startsWith('focus-alarm-')) {
@@ -69,6 +88,13 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
       });
     }
   }
-  if (alarm.name === 'pomodoro-phase-end') await playSound();
-  await handlePomodoroAlarm(alarm.name);
+  if (alarm.name === 'pomodoro-phase-end') {
+    await playSound();
+    await handlePomodoroAlarm(alarm.name);
+    const newState = await getState();
+    if (newState.active && newState.phase === 'work') await playWhiteNoise();
+    else await stopWhiteNoise();
+  } else {
+    await handlePomodoroAlarm(alarm.name);
+  }
 });

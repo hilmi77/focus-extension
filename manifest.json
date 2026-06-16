@@ -26,5 +26,5 @@
       "resources": ["blocked.html", "blocked.css", "blocked.js", "images/*"],
       "matches": ["<all_urls>"]
     }
-  ],
+  ]
 }

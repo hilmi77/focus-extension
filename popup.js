@@ -37,7 +37,9 @@ async function saveNotes(notes) {
 
 function renderNotes(notes) {
   const list = document.getElementById('notesList');
+  const clearBtn = document.getElementById('notesClearBtn');
   list.innerHTML = '';
+  clearBtn.classList.toggle('hidden', notes.length === 0);
   notes.forEach((note, i) => {
     const li = document.createElement('li');
     li.className = 'note-item' + (note.done ? ' done' : '');
@@ -84,6 +86,11 @@ document.getElementById('noteAddBtn').addEventListener('click', async () => {
   if (!text) return;
   await addNote(text);
   input.value = '';
+});
+
+document.getElementById('notesClearBtn').addEventListener('click', async () => {
+  await saveNotes([]);
+  renderNotes([]);
 });
 
 document.getElementById('noteInput').addEventListener('keydown', async (e) => {
@@ -199,6 +206,37 @@ document.getElementById('addBtn').addEventListener('click', async () => {
   targetInput.value = '';
 });
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function formatMins(m) {
+  if (m <= 0) return '0dk';
+  const h = Math.floor(m / 60);
+  const rem = m % 60;
+  if (h === 0) return `${rem}dk`;
+  if (rem === 0) return `${h}sa`;
+  return `${h}sa ${rem}dk`;
+}
+
+function calcProjected(goal, settings) {
+  const { workMins, breakMins, longBreakMins, roundsBeforeLongBreak } = settings;
+  const work = goal * workMins;
+  if (goal <= 1) return { work, rest: 0 };
+  const totalBreaks = goal - 1;
+  const longBreaks = Math.floor(goal / roundsBeforeLongBreak);
+  const shortBreaks = Math.max(0, totalBreaks - longBreaks);
+  const rest = shortBreaks * breakMins + longBreaks * longBreakMins;
+  return { work, rest };
+}
+
+function estimateBreakMins(rounds, settings) {
+  if (rounds <= 1) return 0;
+  const { breakMins, longBreakMins, roundsBeforeLongBreak } = settings;
+  const totalBreaks = rounds - 1;
+  const longBreaks = Math.floor(rounds / roundsBeforeLongBreak);
+  const shortBreaks = Math.max(0, totalBreaks - longBreaks);
+  return shortBreaks * breakMins + longBreaks * longBreakMins;
+}
+
 // ── Goal ──────────────────────────────────────────────────────────────────────
 
 async function getGoal() {
@@ -206,29 +244,53 @@ async function getGoal() {
   return dailyGoal;
 }
 
-function renderGoal(todayRounds, goal) {
+function renderGoal(todayRounds, goal, settings) {
   const pct = Math.min(100, Math.round((todayRounds / goal) * 100));
   const fill = document.getElementById('goalBarFill');
   const text = document.getElementById('goalProgressText');
+  const hint = document.getElementById('goalHint');
   fill.style.width = pct + '%';
   fill.classList.toggle('done', todayRounds >= goal);
-  text.textContent = `${todayRounds} / ${goal} tur tamamlandı`;
+  if (todayRounds >= goal) {
+    const { work, rest } = calcProjected(goal, settings);
+    text.textContent = `Tebrikler! ${formatMins(work)} çalıştın · ${formatMins(rest)} mola yaptın`;
+    text.classList.add('done');
+  } else {
+    text.textContent = `${todayRounds} / ${goal} tur tamamlandı`;
+    text.classList.remove('done');
+  }
   document.getElementById('goalInput').value = goal;
+  if (hint && settings) {
+    const { work, rest } = calcProjected(goal, settings);
+    hint.textContent = `${goal} tur = ${formatMins(work)} çalışma · ${formatMins(rest)} mola`;
+  }
 }
 
 document.getElementById('goalInput').addEventListener('change', async (e) => {
   const val = Math.max(1, Math.min(20, parseInt(e.target.value) || 1));
   e.target.value = val;
   await chrome.storage.local.set({ dailyGoal: val });
-  const { todayRounds } = await getPomodoroStats();
-  renderGoal(todayRounds, val);
+  const [{ todayRounds }, state] = await Promise.all([getPomodoroStats(), getState()]);
+  renderGoal(todayRounds, val, state.settings);
+});
+
+document.getElementById('goalResetBtn').addEventListener('click', async () => {
+  await stopPomodoro();
+  chrome.runtime.sendMessage({ type: 'POMO_STOPPED' });
+  await chrome.storage.local.remove('pomoStats');
+  const [goal, state] = await Promise.all([getGoal(), getState()]);
+  renderGoal(0, goal, state.settings);
+  renderStats({ todayRounds: 0, todayFocusMins: 0 }, state.settings);
+  renderPomodoro(state);
 });
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
 
-function renderStats({ todayRounds, todayFocusMins }) {
+function renderStats({ todayRounds, todayFocusMins }, settings) {
   document.getElementById('todayRounds').textContent = todayRounds;
-  document.getElementById('todayFocusMins').textContent = todayFocusMins;
+  document.getElementById('todayFocusMins').textContent = formatMins(todayFocusMins);
+  const breakMins = settings ? estimateBreakMins(todayRounds, settings) : 0;
+  document.getElementById('todayBreakMins').textContent = formatMins(breakMins);
 }
 
 // ── Pomodoro UI ───────────────────────────────────────────────────────────────
@@ -300,6 +362,7 @@ function startTick(initialState) {
 
 document.getElementById('pomoStartBtn').addEventListener('click', async () => {
   await startPomodoro();
+  chrome.runtime.sendMessage({ type: 'POMO_STARTED' });
   const state = await getState();
   renderPomodoro(state);
   startTick(state);
@@ -308,6 +371,7 @@ document.getElementById('pomoStartBtn').addEventListener('click', async () => {
 document.getElementById('pomoStopBtn').addEventListener('click', async () => {
   clearInterval(pomodoroTick);
   await stopPomodoro();
+  chrome.runtime.sendMessage({ type: 'POMO_STOPPED' });
   const state = await getState();
   renderPomodoro(state);
 });
@@ -330,9 +394,9 @@ document.getElementById('pomoStopBtn').addEventListener('click', async () => {
     getBlockedSites(), getStats(), getState(), getNotes(), getGoal()
   ]);
   renderSiteList(sites);
-  renderStats(stats);
+  renderStats(stats, pomoState.settings);
   renderPomodoro(pomoState);
   startTick(pomoState);
   renderNotes(notes);
-  renderGoal(stats.todayRounds, goal);
+  renderGoal(stats.todayRounds, goal, pomoState.settings);
 })();

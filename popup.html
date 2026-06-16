@@ -54,34 +54,50 @@
       <section class="stats">
         <div class="stat-card">
           <span class="stat-value" id="todayRounds">0</span>
-          <span class="stat-label">🍅 bugün</span>
-          <span class="stat-hint">tamamlanan tur</span>
+          <span class="stat-label">🍅 tur</span>
+          <span class="stat-hint">tamamlanan</span>
         </div>
         <div class="stat-card">
-          <span class="stat-value" id="todayFocusMins">0</span>
-          <span class="stat-label">⏱ odak</span>
-          <span class="stat-hint">dakika bugün</span>
+          <span class="stat-value stat-value--sm" id="todayFocusMins">0dk</span>
+          <span class="stat-label">⏱ çalışma</span>
+          <span class="stat-hint">bugün toplam</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value stat-value--sm" id="todayBreakMins">0dk</span>
+          <span class="stat-label">☕ mola</span>
+          <span class="stat-hint">tahmini toplam</span>
         </div>
       </section>
 
       <section class="goal-section">
         <div class="goal-header">
-          <span class="goal-label">Günlük hedef</span>
+          <div>
+            <span class="goal-label">Günlük hedef</span>
+            <p class="goal-sublabel">bugün kaç pomodoro tamamlamak istiyorsun?</p>
+          </div>
           <div class="goal-input-row">
             <input type="number" id="goalInput" min="1" max="20" value="8" />
             <span class="goal-unit">tur</span>
           </div>
         </div>
+        <p class="goal-hint" id="goalHint"></p>
         <div class="goal-bar-track">
           <div class="goal-bar-fill" id="goalBarFill"></div>
         </div>
-        <p class="goal-progress-text" id="goalProgressText">0 / 8 tur tamamlandı</p>
+        <div class="goal-footer">
+          <p class="goal-progress-text" id="goalProgressText">0 / 8 tur tamamlandı</p>
+          <button class="goal-reset-btn" id="goalResetBtn">Sıfırla</button>
+        </div>
       </section>
 
     </div>
 
     <!-- ── Notlar ── -->
     <div class="tab-panel" id="tab-notes">
+      <div class="notes-header">
+        <span class="notes-title">Notlar</span>
+        <button class="notes-clear-btn hidden" id="notesClearBtn">Tümünü sil</button>
+      </div>
       <ul class="notes-list" id="notesList"></ul>
       <div class="notes-input-row">
         <input type="text" id="noteInput" class="input" placeholder="Yeni not ekle…" />

@@ -2,9 +2,11 @@ const ALARM_NAME = 'pomodoro-phase-end';
 
 const DEFAULT_STATE = {
   active: false,
+  paused: false,
   phase: 'work',
   round: 1,
   endTime: null,
+  remainingMs: null,
   settings: { workMins: 25, breakMins: 5, longBreakMins: 15, roundsBeforeLongBreak: 4 },
 };
 
@@ -35,7 +37,29 @@ export async function startPomodoro() {
 export async function stopPomodoro() {
   await chrome.alarms.clear(ALARM_NAME);
   const state = await getState();
-  await setState({ active: false, endTime: null, phase: 'work', round: 1, settings: state.settings });
+  await setState({
+    active: false,
+    paused: false,
+    endTime: null,
+    remainingMs: null,
+    phase: 'work',
+    round: 1,
+    settings: state.settings,
+  });
+}
+
+export async function pausePomodoro() {
+  const state = await getState();
+  const remainingMs = Math.max(0, state.endTime - Date.now());
+  await chrome.alarms.clear(ALARM_NAME);
+  await setState({ active: false, paused: true, endTime: null, remainingMs });
+}
+
+export async function resumePomodoro() {
+  const state = await getState();
+  const endTime = Date.now() + state.remainingMs;
+  await chrome.alarms.create(ALARM_NAME, { when: endTime });
+  await setState({ active: true, paused: false, endTime, remainingMs: null });
 }
 
 export async function handlePomodoroAlarm(alarmName) {

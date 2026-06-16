@@ -50,6 +50,7 @@ export async function stopPomodoro() {
 
 export async function pausePomodoro() {
   const state = await getState();
+  if (!state.active) return;
   const remainingMs = Math.max(0, state.endTime - Date.now());
   await chrome.alarms.clear(ALARM_NAME);
   await setState({ active: false, paused: true, endTime: null, remainingMs });
@@ -57,6 +58,7 @@ export async function pausePomodoro() {
 
 export async function resumePomodoro() {
   const state = await getState();
+  if (!state.paused || state.remainingMs == null) return;
   const endTime = Date.now() + state.remainingMs;
   await chrome.alarms.create(ALARM_NAME, { when: endTime });
   await setState({ active: true, paused: false, endTime, remainingMs: null });

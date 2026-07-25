@@ -2,7 +2,7 @@
 
 import { findMatch, getDefaultStats, incrementStats } from './utils.js';
 import { handlePomodoroAlarm, getState } from './pomodoro.js';
-import { getSoundSettings, getSoundRuntime, resolveVideoId } from './sound.js';
+import { getSoundSettings, getSoundRuntime, RADIO_STREAM_URL } from './sound.js';
 
 const POMODORO_BLOCKED = ['x.com', 'twitter.com', 'instagram.com'];
 
@@ -69,9 +69,9 @@ async function stopWhiteNoise() {
   if (existing) chrome.runtime.sendMessage({ type: 'STOP_WHITE_NOISE' });
 }
 
-async function playMusic(videoId) {
+async function playMusic() {
   await ensureOffscreen();
-  chrome.runtime.sendMessage({ type: 'START_MUSIC', videoId });
+  chrome.runtime.sendMessage({ type: 'START_MUSIC', streamUrl: RADIO_STREAM_URL });
 }
 
 async function stopMusic() {
@@ -96,7 +96,7 @@ async function syncAudio() {
     await playWhiteNoise();
   } else if (settings.mode === 'classic') {
     await stopWhiteNoise();
-    await playMusic(resolveVideoId(settings.musicUrl));
+    await playMusic();
   }
 }
 

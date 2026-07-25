@@ -1,4 +1,5 @@
 import { getState, startPomodoro, stopPomodoro, pausePomodoro, resumePomodoro, updateSettings, getPomodoroStats } from './pomodoro.js';
+import { getSoundSettings, setSoundSettings, getSoundRuntime, setSoundMuted, fetchNowPlaying } from './sound.js';
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
@@ -423,6 +424,67 @@ document.getElementById('pomoResetBtn').addEventListener('click', async () => {
   });
 });
 
+// ── Ses UI ─────────────────────────────────────────────────────────────────────
+
+let nowPlayingTimer = null;
+
+function renderSound(settings, runtime) {
+  document.querySelectorAll('.sound-mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === settings.mode);
+  });
+  const toggleBtn = document.getElementById('soundToggleBtn');
+  const nowPlaying = document.getElementById('nowPlaying');
+
+  nowPlaying.classList.toggle('hidden', settings.mode !== 'classic');
+  toggleBtn.classList.toggle('hidden', settings.mode === 'off');
+  toggleBtn.textContent = runtime.muted ? '▶ Sesi aç' : '⏸ Sesi durdur';
+
+  if (settings.mode === 'classic') startNowPlaying();
+  else stopNowPlaying();
+}
+
+async function updateNowPlaying() {
+  const track = document.getElementById('nowPlayingTrack');
+  const info = await fetchNowPlaying();
+  if (!info) {
+    track.textContent = 'Bilgi alınamadı';
+    return;
+  }
+  track.textContent = [info.artist, info.title].filter(Boolean).join(' — ') || 'Bilinmiyor';
+}
+
+function startNowPlaying() {
+  if (nowPlayingTimer) return;
+  updateNowPlaying();
+  nowPlayingTimer = setInterval(updateNowPlaying, 15000);
+}
+
+function stopNowPlaying() {
+  clearInterval(nowPlayingTimer);
+  nowPlayingTimer = null;
+}
+
+async function refreshSound() {
+  const [settings, runtime] = await Promise.all([getSoundSettings(), getSoundRuntime()]);
+  renderSound(settings, runtime);
+}
+
+document.querySelectorAll('.sound-mode-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    await setSoundSettings({ mode: btn.dataset.mode });
+    await setSoundMuted(false);
+    chrome.runtime.sendMessage({ type: 'SYNC_AUDIO' });
+    await refreshSound();
+  });
+});
+
+document.getElementById('soundToggleBtn').addEventListener('click', async () => {
+  const runtime = await getSoundRuntime();
+  await setSoundMuted(!runtime.muted);
+  chrome.runtime.sendMessage({ type: 'SYNC_AUDIO' });
+  await refreshSound();
+});
+
 // ── Init ─────────────────────────────────────────────────────────────────────
 
 (async () => {
@@ -435,4 +497,5 @@ document.getElementById('pomoResetBtn').addEventListener('click', async () => {
   startTick(pomoState);
   renderNotes(notes);
   renderGoal(stats.todayRounds, goal, pomoState.settings);
+  await refreshSound();
 })();

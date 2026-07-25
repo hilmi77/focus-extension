@@ -25,6 +25,22 @@ function stopWhiteNoise() {
   noiseGain = null;
 }
 
+let musicAudio = null;
+
+function startMusic(streamUrl) {
+  if (musicAudio) stopMusic();
+  musicAudio = new Audio(streamUrl);
+  musicAudio.play().catch(() => {});
+}
+
+function stopMusic() {
+  if (musicAudio) {
+    musicAudio.pause();
+    musicAudio.src = '';
+    musicAudio = null;
+  }
+}
+
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'PLAY_SOUND') {
     const ctx = new AudioContext();
@@ -44,4 +60,6 @@ chrome.runtime.onMessage.addListener((msg) => {
 
   if (msg.type === 'START_WHITE_NOISE') startWhiteNoise(msg.volume ?? 0.12);
   if (msg.type === 'STOP_WHITE_NOISE') stopWhiteNoise();
+  if (msg.type === 'START_MUSIC') startMusic(msg.streamUrl);
+  if (msg.type === 'STOP_MUSIC') stopMusic();
 });

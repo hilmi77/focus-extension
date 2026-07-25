@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "Dikkat dağıtıcı siteleri engelle, üretken sitelere yönlen.",
   "permissions": ["storage", "webNavigation", "tabs", "alarms", "notifications", "offscreen"],
+  "host_permissions": ["https://ssatr.playlist-api.deliver.media/*"],
   "background": {
     "service_worker": "background.js",
     "type": "module"

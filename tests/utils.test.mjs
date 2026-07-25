@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { findMatch, incrementStats, getDefaultStats, trimHistory } from '../utils.js';
+import { findMatch, incrementStats, getDefaultStats, trimHistory, parseYouTubeId } from '../utils.js';
 
 describe('findMatch', () => {
   const sites = [
@@ -78,5 +78,35 @@ describe('trimHistory', () => {
     assert.equal(result['2026-05-01'], undefined);
     assert.equal(result['2026-05-07'], undefined);
     assert.equal(result['2026-05-08'], 5);
+  });
+});
+
+describe('parseYouTubeId', () => {
+  it('tam watch URL için video ID döner', () => {
+    assert.equal(parseYouTubeId('https://www.youtube.com/watch?v=dQw4w9WgXcQ'), 'dQw4w9WgXcQ');
+  });
+
+  it('youtu.be kısa link için ID döner', () => {
+    assert.equal(parseYouTubeId('https://youtu.be/dQw4w9WgXcQ'), 'dQw4w9WgXcQ');
+  });
+
+  it('live/embed yolu için ID döner', () => {
+    assert.equal(parseYouTubeId('https://www.youtube.com/live/dQw4w9WgXcQ'), 'dQw4w9WgXcQ');
+    assert.equal(parseYouTubeId('https://www.youtube.com/embed/dQw4w9WgXcQ'), 'dQw4w9WgXcQ');
+  });
+
+  it('düz 11 karakterlik ID kabul eder', () => {
+    assert.equal(parseYouTubeId('dQw4w9WgXcQ'), 'dQw4w9WgXcQ');
+  });
+
+  it('ekstra parametreli watch URL için ID döner', () => {
+    assert.equal(parseYouTubeId('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=42s'), 'dQw4w9WgXcQ');
+  });
+
+  it('geçersiz girdi için null döner', () => {
+    assert.equal(parseYouTubeId('https://example.com/foo'), null);
+    assert.equal(parseYouTubeId('merhaba dünya'), null);
+    assert.equal(parseYouTubeId(''), null);
+    assert.equal(parseYouTubeId(null), null);
   });
 });

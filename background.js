@@ -2,6 +2,7 @@
 
 import { findMatch, getDefaultStats, incrementStats } from './utils.js';
 import { handlePomodoroAlarm, getState } from './pomodoro.js';
+import { getSoundSettings, getSoundRuntime, resolveVideoId } from './sound.js';
 
 const POMODORO_BLOCKED = ['x.com', 'twitter.com', 'instagram.com'];
 
@@ -68,11 +69,41 @@ async function stopWhiteNoise() {
   if (existing) chrome.runtime.sendMessage({ type: 'STOP_WHITE_NOISE' });
 }
 
+async function playMusic(videoId) {
+  await ensureOffscreen();
+  chrome.runtime.sendMessage({ type: 'START_MUSIC', videoId });
+}
+
+async function stopMusic() {
+  const existing = await chrome.offscreen.hasDocument();
+  if (existing) chrome.runtime.sendMessage({ type: 'STOP_MUSIC' });
+}
+
+async function syncAudio() {
+  const [settings, runtime, pomo] = await Promise.all([
+    getSoundSettings(), getSoundRuntime(), getState(),
+  ]);
+  const shouldPlay = settings.mode !== 'off' && pomo.active && pomo.phase === 'work' && !runtime.muted;
+
+  if (!shouldPlay) {
+    await stopWhiteNoise();
+    await stopMusic();
+    return;
+  }
+
+  if (settings.mode === 'whitenoise') {
+    await stopMusic();
+    await playWhiteNoise();
+  } else if (settings.mode === 'classic') {
+    await stopWhiteNoise();
+    await playMusic(resolveVideoId(settings.musicUrl));
+  }
+}
+
 chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.type === 'POMO_STARTED') playWhiteNoise();
-  if (msg.type === 'POMO_PAUSED') stopWhiteNoise();
-  if (msg.type === 'POMO_RESUMED') playWhiteNoise();
-  if (msg.type === 'POMO_STOPPED') stopWhiteNoise();
+  if (['POMO_STARTED', 'POMO_PAUSED', 'POMO_RESUMED', 'POMO_STOPPED', 'SYNC_AUDIO'].includes(msg.type)) {
+    syncAudio();
+  }
 });
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
@@ -93,9 +124,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === 'pomodoro-phase-end') {
     await playSound();
     await handlePomodoroAlarm(alarm.name);
-    const newState = await getState();
-    if (newState.active && newState.phase === 'work') await playWhiteNoise();
-    else await stopWhiteNoise();
+    await syncAudio();
   } else {
     await handlePomodoroAlarm(alarm.name);
   }

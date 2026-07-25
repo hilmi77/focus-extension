@@ -48,28 +48,3 @@ function getPreviousDay(dateStr) {
   d.setDate(d.getDate() - 1);
   return d.toISOString().split('T')[0];
 }
-
-export function parseYouTubeId(input) {
-  if (!input || typeof input !== 'string') return null;
-  const str = input.trim();
-  if (!str) return null;
-  const ID = /^[A-Za-z0-9_-]{11}$/;
-  if (ID.test(str)) return str;
-  try {
-    const url = new URL(str);
-    const host = url.hostname.replace(/^www\./, '');
-    if (host === 'youtu.be') {
-      const id = url.pathname.slice(1);
-      return ID.test(id) ? id : null;
-    }
-    if (host === 'youtube.com' || host === 'm.youtube.com') {
-      const v = url.searchParams.get('v');
-      if (v && ID.test(v)) return v;
-      const m = url.pathname.match(/^\/(?:embed|live|shorts)\/([A-Za-z0-9_-]{11})/);
-      if (m) return m[1];
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}

@@ -25,6 +25,23 @@ function stopWhiteNoise() {
   noiseGain = null;
 }
 
+function startMusic(videoId) {
+  const host = document.getElementById('ytHost');
+  host.innerHTML = '';
+  const iframe = document.createElement('iframe');
+  iframe.width = '0';
+  iframe.height = '0';
+  iframe.style.border = 'none';
+  iframe.allow = 'autoplay';
+  iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1`;
+  host.appendChild(iframe);
+}
+
+function stopMusic() {
+  const host = document.getElementById('ytHost');
+  host.innerHTML = '';
+}
+
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'PLAY_SOUND') {
     const ctx = new AudioContext();
@@ -44,4 +61,6 @@ chrome.runtime.onMessage.addListener((msg) => {
 
   if (msg.type === 'START_WHITE_NOISE') startWhiteNoise(msg.volume ?? 0.12);
   if (msg.type === 'STOP_WHITE_NOISE') stopWhiteNoise();
+  if (msg.type === 'START_MUSIC') startMusic(msg.videoId);
+  if (msg.type === 'STOP_MUSIC') stopMusic();
 });

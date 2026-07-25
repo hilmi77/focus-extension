@@ -1,7 +1,7 @@
 import { parseYouTubeId } from './utils.js';
 
-// 7/24 canlı klasik müzik yayını. Task 6'da gömmeye açık olduğu doğrulanacak.
-export const PRESET_CLASSICAL_VIDEO_ID = 'jgpJVI3tDbY';
+// 7/24 canlı klasik piyano yayını. Task 6'da tarayıcıda gömmeye açık olduğu doğrulanmalı.
+export const PRESET_CLASSICAL_VIDEO_ID = 'OowUi602GdU';
 
 const DEFAULT_SOUND_SETTINGS = { mode: 'off', musicUrl: null };
 

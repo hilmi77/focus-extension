@@ -1,5 +1,5 @@
 import { getState, startPomodoro, stopPomodoro, pausePomodoro, resumePomodoro, updateSettings, getPomodoroStats } from './pomodoro.js';
-import { getSoundSettings, setSoundSettings, getSoundRuntime, setSoundMuted } from './sound.js';
+import { getSoundSettings, setSoundSettings, getSoundRuntime, setSoundMuted, fetchNowPlaying } from './sound.js';
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
@@ -426,19 +426,42 @@ document.getElementById('pomoResetBtn').addEventListener('click', async () => {
 
 // ── Ses UI ─────────────────────────────────────────────────────────────────────
 
+let nowPlayingTimer = null;
+
 function renderSound(settings, runtime) {
   document.querySelectorAll('.sound-mode-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.mode === settings.mode);
   });
-  const musicRow = document.getElementById('soundMusicRow');
   const toggleBtn = document.getElementById('soundToggleBtn');
-  const urlInput = document.getElementById('soundMusicUrl');
+  const nowPlaying = document.getElementById('nowPlaying');
 
-  musicRow.classList.toggle('hidden', settings.mode !== 'classic');
-  urlInput.value = settings.musicUrl ?? '';
-
+  nowPlaying.classList.toggle('hidden', settings.mode !== 'classic');
   toggleBtn.classList.toggle('hidden', settings.mode === 'off');
   toggleBtn.textContent = runtime.muted ? '▶ Sesi aç' : '⏸ Sesi durdur';
+
+  if (settings.mode === 'classic') startNowPlaying();
+  else stopNowPlaying();
+}
+
+async function updateNowPlaying() {
+  const track = document.getElementById('nowPlayingTrack');
+  const info = await fetchNowPlaying();
+  if (!info) {
+    track.textContent = 'Bilgi alınamadı';
+    return;
+  }
+  track.textContent = [info.artist, info.title].filter(Boolean).join(' — ') || 'Bilinmiyor';
+}
+
+function startNowPlaying() {
+  if (nowPlayingTimer) return;
+  updateNowPlaying();
+  nowPlayingTimer = setInterval(updateNowPlaying, 15000);
+}
+
+function stopNowPlaying() {
+  clearInterval(nowPlayingTimer);
+  nowPlayingTimer = null;
 }
 
 async function refreshSound() {
@@ -453,13 +476,6 @@ document.querySelectorAll('.sound-mode-btn').forEach(btn => {
     chrome.runtime.sendMessage({ type: 'SYNC_AUDIO' });
     await refreshSound();
   });
-});
-
-document.getElementById('soundMusicUrl').addEventListener('change', async (e) => {
-  const val = e.target.value.trim();
-  await setSoundSettings({ musicUrl: val || null });
-  chrome.runtime.sendMessage({ type: 'SYNC_AUDIO' });
-  await refreshSound();
 });
 
 document.getElementById('soundToggleBtn').addEventListener('click', async () => {

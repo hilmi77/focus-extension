@@ -53,6 +53,17 @@
             <span>dk</span>
           </label>
         </div>
+        <div class="pomo-sound">
+          <div class="sound-modes" role="group" aria-label="Ses modu">
+            <button type="button" class="sound-mode-btn" data-mode="off">🔇 Kapalı</button>
+            <button type="button" class="sound-mode-btn" data-mode="whitenoise">🌊 Gürültü</button>
+            <button type="button" class="sound-mode-btn" data-mode="classic">🎼 Müzik</button>
+          </div>
+          <div class="sound-music-row hidden" id="soundMusicRow">
+            <input type="text" id="soundMusicUrl" placeholder="YouTube linki (boşsa klasik radyo)" />
+          </div>
+          <button type="button" class="sound-toggle-btn hidden" id="soundToggleBtn" title="Sesi durdur/oynat">⏸ Sesi durdur</button>
+        </div>
       </section>
 
       <section class="stats">

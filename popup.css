@@ -627,3 +627,20 @@ canvas {
   outline: none;
 }
 .pomo-setting input[type="number"]:focus { border-color: #6366f1; }
+
+.pomo-sound { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 8px; }
+.sound-modes { display: flex; gap: 6px; }
+.sound-mode-btn {
+  flex: 1; padding: 6px 4px; font-size: 12px; cursor: pointer;
+  border: 1px solid #d0d0d0; border-radius: 8px; background: #f6f6f6; color: #333;
+}
+.sound-mode-btn.active { background: #2d6cdf; border-color: #2d6cdf; color: #fff; }
+.sound-music-row { display: flex; }
+.sound-music-row input {
+  flex: 1; padding: 6px 8px; font-size: 12px;
+  border: 1px solid #d0d0d0; border-radius: 8px;
+}
+.sound-toggle-btn {
+  padding: 6px 8px; font-size: 12px; cursor: pointer;
+  border: 1px solid #d0d0d0; border-radius: 8px; background: #f6f6f6; color: #333;
+}

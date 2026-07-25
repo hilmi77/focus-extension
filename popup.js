@@ -1,4 +1,5 @@
 import { getState, startPomodoro, stopPomodoro, pausePomodoro, resumePomodoro, updateSettings, getPomodoroStats } from './pomodoro.js';
+import { getSoundSettings, setSoundSettings, getSoundRuntime, setSoundMuted } from './sound.js';
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
@@ -423,6 +424,51 @@ document.getElementById('pomoResetBtn').addEventListener('click', async () => {
   });
 });
 
+// ── Ses UI ─────────────────────────────────────────────────────────────────────
+
+function renderSound(settings, runtime) {
+  document.querySelectorAll('.sound-mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === settings.mode);
+  });
+  const musicRow = document.getElementById('soundMusicRow');
+  const toggleBtn = document.getElementById('soundToggleBtn');
+  const urlInput = document.getElementById('soundMusicUrl');
+
+  musicRow.classList.toggle('hidden', settings.mode !== 'classic');
+  urlInput.value = settings.musicUrl ?? '';
+
+  toggleBtn.classList.toggle('hidden', settings.mode === 'off');
+  toggleBtn.textContent = runtime.muted ? '▶ Sesi aç' : '⏸ Sesi durdur';
+}
+
+async function refreshSound() {
+  const [settings, runtime] = await Promise.all([getSoundSettings(), getSoundRuntime()]);
+  renderSound(settings, runtime);
+}
+
+document.querySelectorAll('.sound-mode-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    await setSoundSettings({ mode: btn.dataset.mode });
+    await setSoundMuted(false);
+    chrome.runtime.sendMessage({ type: 'SYNC_AUDIO' });
+    await refreshSound();
+  });
+});
+
+document.getElementById('soundMusicUrl').addEventListener('change', async (e) => {
+  const val = e.target.value.trim();
+  await setSoundSettings({ musicUrl: val || null });
+  chrome.runtime.sendMessage({ type: 'SYNC_AUDIO' });
+  await refreshSound();
+});
+
+document.getElementById('soundToggleBtn').addEventListener('click', async () => {
+  const runtime = await getSoundRuntime();
+  await setSoundMuted(!runtime.muted);
+  chrome.runtime.sendMessage({ type: 'SYNC_AUDIO' });
+  await refreshSound();
+});
+
 // ── Init ─────────────────────────────────────────────────────────────────────
 
 (async () => {
@@ -435,4 +481,5 @@ document.getElementById('pomoResetBtn').addEventListener('click', async () => {
   startTick(pomoState);
   renderNotes(notes);
   renderGoal(stats.todayRounds, goal, pomoState.settings);
+  await refreshSound();
 })();

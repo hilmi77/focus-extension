@@ -37,6 +37,7 @@ describe('getDefaultStats', () => {
     assert.equal(stats.todayDate, null);
     assert.equal(stats.lastBlockedDate, null);
     assert.deepEqual(stats.history, {});
+    assert.deepEqual(stats.siteCounts, {});
   });
 });
 
@@ -68,6 +69,31 @@ describe('incrementStats', () => {
     const result = incrementStats(getDefaultStats(), '2026-05-14');
     assert.equal(result.streak, 1);
     assert.equal(result.todayCount, 1);
+  });
+
+  it('source verilirse aynı günde o siteye özel sayaç artar', () => {
+    const stats = { ...getDefaultStats(), todayDate: '2026-05-14', todayCount: 2, streak: 3, siteCounts: { 'instagram.com': 2 } };
+    const result = incrementStats(stats, '2026-05-14', 'instagram.com');
+    assert.equal(result.siteCounts['instagram.com'], 3);
+  });
+
+  it('source verilirse aynı günde farklı bir site kendi sayacında başlar', () => {
+    const stats = { ...getDefaultStats(), todayDate: '2026-05-14', todayCount: 2, streak: 3, siteCounts: { 'instagram.com': 2 } };
+    const result = incrementStats(stats, '2026-05-14', 'x.com');
+    assert.equal(result.siteCounts['x.com'], 1);
+    assert.equal(result.siteCounts['instagram.com'], 2);
+  });
+
+  it('source verilmezse siteCounts değişmeden kalır', () => {
+    const stats = { ...getDefaultStats(), todayDate: '2026-05-14', todayCount: 2, streak: 3, siteCounts: { 'instagram.com': 2 } };
+    const result = incrementStats(stats, '2026-05-14');
+    assert.deepEqual(result.siteCounts, { 'instagram.com': 2 });
+  });
+
+  it('yeni günde siteCounts sıfırlanıp sadece yeni site ile başlar', () => {
+    const stats = { ...getDefaultStats(), todayDate: '2026-05-13', todayCount: 5, streak: 3, siteCounts: { 'instagram.com': 5 } };
+    const result = incrementStats(stats, '2026-05-14', 'x.com');
+    assert.deepEqual(result.siteCounts, { 'x.com': 1 });
   });
 });
 
@@ -128,57 +154,73 @@ describe('migrateBlockedSites', () => {
 
 describe('pickBlockedMessage', () => {
   it('sadece düşündürücü sorular uygulanabilirken havuz boş dönmez', () => {
-    const msg = pickBlockedMessage({ streak: 1, todayCount: 0 }, { todayFocusMins: 0 }, 0);
+    const msg = pickBlockedMessage({ streak: 1 }, { todayFocusMins: 0 }, 0, 0);
     assert.ok(msg && msg.line1 && msg.line2 && msg.sub);
   });
 
   it('streak >= 2 ise streak mesajı adaylar arasına girer (index 0)', () => {
-    const stats = { streak: 3, todayCount: 0 };
+    const stats = { streak: 3 };
     const pomoStats = { todayFocusMins: 0 };
-    const msg = pickBlockedMessage(stats, pomoStats, 0);
+    const msg = pickBlockedMessage(stats, pomoStats, 0, 0);
     assert.match(msg.line1, /3 günlük/);
   });
 
   it('streak 1 iken streak mesajı hiç aday olmaz', () => {
-    const stats = { streak: 1, todayCount: 0 };
+    const stats = { streak: 1 };
     const pomoStats = { todayFocusMins: 0 };
     for (let i = 0; i < 5; i++) {
-      const msg = pickBlockedMessage(stats, pomoStats, i);
+      const msg = pickBlockedMessage(stats, pomoStats, i, 0);
       assert.doesNotMatch(msg.line2, /zincirini kırma/);
     }
   });
 
-  it('todayCount >= 1 ise sayı mesajı adaylar arasına girer (index 0)', () => {
-    const stats = { streak: 0, todayCount: 4 };
+  it('siteCount >= 1 ise sayı mesajı adaylar arasına girer (index 0)', () => {
+    const stats = { streak: 0 };
     const pomoStats = { todayFocusMins: 0 };
-    const msg = pickBlockedMessage(stats, pomoStats, 0);
+    const msg = pickBlockedMessage(stats, pomoStats, 0, 4);
     assert.match(msg.line2, /4\. kez/);
   });
 
+  it('siteCount 0 iken sayı mesajı hiç aday olmaz', () => {
+    const stats = { streak: 0 };
+    const pomoStats = { todayFocusMins: 0 };
+    for (let i = 0; i < 5; i++) {
+      const msg = pickBlockedMessage(stats, pomoStats, i, 0);
+      assert.doesNotMatch(msg.line2, /\. kez engelledin/);
+    }
+  });
+
   it('todayFocusMins >= 15 ise odak mesajı adaylar arasına girer', () => {
-    const stats = { streak: 0, todayCount: 0 };
-    const msg = pickBlockedMessage(stats, { todayFocusMins: 15 }, 0);
+    const stats = { streak: 0 };
+    const msg = pickBlockedMessage(stats, { todayFocusMins: 15 }, 0, 0);
     assert.match(msg.line2, /odaklandın/);
   });
 
   it('todayFocusMins 14 iken odak mesajı hiç aday olmaz', () => {
-    const stats = { streak: 0, todayCount: 0 };
+    const stats = { streak: 0 };
     for (let i = 0; i < 5; i++) {
-      const msg = pickBlockedMessage(stats, { todayFocusMins: 14 }, i);
+      const msg = pickBlockedMessage(stats, { todayFocusMins: 14 }, i, 0);
       assert.doesNotMatch(msg.line2, /odaklandın/);
     }
   });
 
   it('null stats/pomoStats ile çökmeden düşündürücü sorulardan biri döner', () => {
-    const msg = pickBlockedMessage(null, null, 2);
+    const msg = pickBlockedMessage(null, null, 2, 0);
     assert.ok(msg.line1 && msg.line2 && msg.sub);
   });
 
+  it('siteCount verilmezse varsayılan 0 kabul edilir (sayı mesajı aday olmaz)', () => {
+    for (let i = 0; i < 5; i++) {
+      const msg = pickBlockedMessage({ streak: 0 }, { todayFocusMins: 0 }, i);
+      assert.doesNotMatch(msg.line2, /\. kez engelledin/);
+    }
+  });
+
   it('aynı girdi ve randomIndex ile her zaman aynı mesajı döner (deterministik)', () => {
-    const stats = { streak: 3, todayCount: 2 };
+    const stats = { streak: 3 };
     const pomoStats = { todayFocusMins: 20 };
-    const a = pickBlockedMessage(stats, pomoStats, 7);
-    const b = pickBlockedMessage(stats, pomoStats, 7);
+    const a = pickBlockedMessage(stats, pomoStats, 7, 2);
+    const b = pickBlockedMessage(stats, pomoStats, 7, 2);
     assert.deepEqual(a, b);
   });
 });

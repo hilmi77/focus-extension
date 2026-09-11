@@ -12,14 +12,17 @@ export function findMatch(url, blockedSites) {
 }
 
 export function getDefaultStats() {
-  return { streak: 0, lastBlockedDate: null, todayCount: 0, todayDate: null, history: {} };
+  return { streak: 0, lastBlockedDate: null, todayCount: 0, todayDate: null, history: {}, siteCounts: {} };
 }
 
-export function incrementStats(stats, today) {
+export function incrementStats(stats, today, source) {
   const yesterday = getPreviousDay(today);
 
   if (stats.todayDate === today) {
-    return { ...stats, todayCount: stats.todayCount + 1 };
+    const siteCounts = source
+      ? { ...stats.siteCounts, [source]: (stats.siteCounts?.[source] ?? 0) + 1 }
+      : stats.siteCounts ?? {};
+    return { ...stats, todayCount: stats.todayCount + 1, siteCounts };
   }
 
   const newHistory = stats.todayDate
@@ -32,6 +35,7 @@ export function incrementStats(stats, today) {
     todayCount: 1,
     todayDate: today,
     history: newHistory,
+    siteCounts: source ? { [source]: 1 } : {},
   };
 }
 
@@ -103,10 +107,10 @@ function focusMessage(todayFocusMins) {
   };
 }
 
-export function pickBlockedMessage(stats, pomoStats, randomIndex) {
+export function pickBlockedMessage(stats, pomoStats, randomIndex, siteCount = 0) {
   const candidates = [];
   if (stats?.streak >= 2) candidates.push(streakMessage(stats.streak));
-  if (stats?.todayCount >= 1) candidates.push(todayCountMessage(stats.todayCount));
+  if (siteCount >= 1) candidates.push(todayCountMessage(siteCount));
   if (pomoStats?.todayFocusMins >= 15) candidates.push(focusMessage(pomoStats.todayFocusMins));
   candidates.push(...REFLECTIVE_QUESTIONS);
   return candidates[randomIndex % candidates.length];

@@ -17,8 +17,9 @@ chrome.webNavigation.onBeforeNavigate.addListener(async ({ tabId, url, frameId }
     const match = findMatch(url, blockedSites);
     if (match) {
       const target = encodeURIComponent(match.target);
-      await chrome.tabs.update(tabId, { url: chrome.runtime.getURL(`blocked.html?target=${target}`) });
-      await recordBlock();
+      const source = encodeURIComponent(match.source);
+      await chrome.tabs.update(tabId, { url: chrome.runtime.getURL(`blocked.html?target=${target}&source=${source}`) });
+      await recordBlock(match.source);
       return;
     }
   }
@@ -54,11 +55,11 @@ function matchesPomodoroList(url) {
   }
 }
 
-async function recordBlock() {
+async function recordBlock(source) {
   const { stats } = await chrome.storage.local.get({ stats: null });
   const current = stats ?? getDefaultStats();
   const today = new Date().toISOString().split('T')[0];
-  const updated = incrementStats(current, today);
+  const updated = incrementStats(current, today, source);
   await chrome.storage.local.set({ stats: updated });
 }
 

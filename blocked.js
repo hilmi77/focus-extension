@@ -2,6 +2,7 @@ import { pickBlockedMessage } from './utils.js';
 
 const params = new URLSearchParams(window.location.search);
 const target = params.get('target');
+const source = params.get('source');
 const isPomodoro = params.get('pomodoro') === '1';
 
 const btn = document.getElementById('goBtn');
@@ -23,7 +24,8 @@ async function applyMotivationalMessage() {
     chrome.storage.local.get({ stats: null }),
     chrome.storage.local.get({ pomoStats: null }),
   ]);
-  const msg = pickBlockedMessage(stats, pomoStats, Math.floor(Math.random() * 1000));
+  const siteCount = source ? (stats?.siteCounts?.[source] ?? 0) : 0;
+  const msg = pickBlockedMessage(stats, pomoStats, Math.floor(Math.random() * 1000), siteCount);
   document.querySelector('.eyebrow').textContent = msg.eyebrow;
   document.querySelector('.line1').textContent = msg.line1;
   document.querySelector('.line2').textContent = msg.line2;

@@ -46,21 +46,23 @@ body {
 }
 
 .line1 {
-  font-size: clamp(3.5rem, 9vw, 7rem);
+  font-size: clamp(1.8rem, 5vw, 3.2rem);
   background: linear-gradient(135deg, #fbbf24 0%, #f97316 50%, #ec4899 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   padding-bottom: 0.05em;
+  overflow-wrap: break-word;
 }
 
 .line2 {
-  font-size: clamp(4rem, 11vw, 8.5rem);
+  font-size: clamp(2rem, 6vw, 3.6rem);
   background: linear-gradient(135deg, #c084fc 0%, #818cf8 50%, #38bdf8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   padding-bottom: 0.2em;
+  overflow-wrap: break-word;
 }
 
 .sub {

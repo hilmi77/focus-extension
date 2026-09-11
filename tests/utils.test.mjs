@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { findMatch, incrementStats, getDefaultStats, trimHistory, isLocked, migrateBlockedSites, LOCK_DURATION_MS } from '../utils.js';
+import { findMatch, incrementStats, getDefaultStats, trimHistory, isLocked, migrateBlockedSites, LOCK_DURATION_MS, pickBlockedMessage } from '../utils.js';
 
 describe('findMatch', () => {
   const sites = [
@@ -123,5 +123,62 @@ describe('migrateBlockedSites', () => {
     const sites = [{ source: 'x.com', target: 'https://nodejs.org' }];
     migrateBlockedSites(sites, now);
     assert.equal(sites[0].addedAt, undefined);
+  });
+});
+
+describe('pickBlockedMessage', () => {
+  it('sadece düşündürücü sorular uygulanabilirken havuz boş dönmez', () => {
+    const msg = pickBlockedMessage({ streak: 1, todayCount: 0 }, { todayFocusMins: 0 }, 0);
+    assert.ok(msg && msg.line1 && msg.line2 && msg.sub);
+  });
+
+  it('streak >= 2 ise streak mesajı adaylar arasına girer (index 0)', () => {
+    const stats = { streak: 3, todayCount: 0 };
+    const pomoStats = { todayFocusMins: 0 };
+    const msg = pickBlockedMessage(stats, pomoStats, 0);
+    assert.match(msg.line1, /3 günlük/);
+  });
+
+  it('streak 1 iken streak mesajı hiç aday olmaz', () => {
+    const stats = { streak: 1, todayCount: 0 };
+    const pomoStats = { todayFocusMins: 0 };
+    for (let i = 0; i < 5; i++) {
+      const msg = pickBlockedMessage(stats, pomoStats, i);
+      assert.doesNotMatch(msg.line2, /zincirini kırma/);
+    }
+  });
+
+  it('todayCount >= 1 ise sayı mesajı adaylar arasına girer (index 0)', () => {
+    const stats = { streak: 0, todayCount: 4 };
+    const pomoStats = { todayFocusMins: 0 };
+    const msg = pickBlockedMessage(stats, pomoStats, 0);
+    assert.match(msg.line2, /4\. kez/);
+  });
+
+  it('todayFocusMins >= 15 ise odak mesajı adaylar arasına girer', () => {
+    const stats = { streak: 0, todayCount: 0 };
+    const msg = pickBlockedMessage(stats, { todayFocusMins: 15 }, 0);
+    assert.match(msg.line2, /odaklandın/);
+  });
+
+  it('todayFocusMins 14 iken odak mesajı hiç aday olmaz', () => {
+    const stats = { streak: 0, todayCount: 0 };
+    for (let i = 0; i < 5; i++) {
+      const msg = pickBlockedMessage(stats, { todayFocusMins: 14 }, i);
+      assert.doesNotMatch(msg.line2, /odaklandın/);
+    }
+  });
+
+  it('null stats/pomoStats ile çökmeden düşündürücü sorulardan biri döner', () => {
+    const msg = pickBlockedMessage(null, null, 2);
+    assert.ok(msg.line1 && msg.line2 && msg.sub);
+  });
+
+  it('aynı girdi ve randomIndex ile her zaman aynı mesajı döner (deterministik)', () => {
+    const stats = { streak: 3, todayCount: 2 };
+    const pomoStats = { todayFocusMins: 20 };
+    const a = pickBlockedMessage(stats, pomoStats, 7);
+    const b = pickBlockedMessage(stats, pomoStats, 7);
+    assert.deepEqual(a, b);
   });
 });

@@ -1,3 +1,4 @@
+import { isLocked, migrateBlockedSites, LOCK_DURATION_MS } from './utils.js';
 import { getState, startPomodoro, stopPomodoro, pausePomodoro, resumePomodoro, updateSettings, getPomodoroStats } from './pomodoro.js';
 import { getSoundSettings, setSoundSettings, getSoundRuntime, setSoundMuted, fetchNowPlaying } from './sound.js';
 
@@ -19,6 +20,14 @@ async function getBlockedSites() {
 
 async function saveBlockedSites(sites) {
   await chrome.storage.sync.set({ blockedSites: sites });
+}
+
+async function migrateAndGetBlockedSites() {
+  const sites = await getBlockedSites();
+  const migrated = migrateBlockedSites(sites, Date.now());
+  const changed = migrated.some((site, i) => site.addedAt !== sites[i].addedAt);
+  if (changed) await saveBlockedSites(migrated);
+  return migrated;
 }
 
 async function getStats() {
@@ -107,6 +116,15 @@ document.getElementById('noteInput').addEventListener('keydown', async (e) => {
 
 let editingIndex = null;
 
+let siteLockTick = null;
+
+function startSiteLockTick() {
+  clearInterval(siteLockTick);
+  siteLockTick = setInterval(async () => {
+    renderSiteList(await getBlockedSites());
+  }, 60000);
+}
+
 function renderSiteList(sites) {
   const list = document.getElementById('siteList');
   list.innerHTML = '';
@@ -118,6 +136,8 @@ function renderSiteList(sites) {
     list.appendChild(empty);
     return;
   }
+
+  const now = Date.now();
 
   sites.forEach((site, i) => {
     const li = document.createElement('li');
@@ -135,16 +155,20 @@ function renderSiteList(sites) {
     target.className = 'site-target';
     target.textContent = site.target;
 
+    const locked = isLocked(site, now);
+
     const editBtn = document.createElement('button');
     editBtn.className = 'edit-btn';
-    editBtn.title = 'Düzenle';
+    editBtn.title = locked ? 'Kilitli' : 'Düzenle';
     editBtn.textContent = 'düzenle';
+    editBtn.disabled = locked;
     editBtn.addEventListener('click', () => openEdit(i, site));
 
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'delete-btn';
-    deleteBtn.title = 'Sil';
+    deleteBtn.title = locked ? 'Kilitli' : 'Sil';
     deleteBtn.textContent = 'sil';
+    deleteBtn.disabled = locked;
     deleteBtn.addEventListener('click', async () => {
       const current = await getBlockedSites();
       current.splice(i, 1);
@@ -154,6 +178,15 @@ function renderSiteList(sites) {
     });
 
     li.append(source, arrow, target, editBtn, deleteBtn);
+
+    if (locked) {
+      const remainingMs = site.addedAt + LOCK_DURATION_MS - now;
+      const lockBadge = document.createElement('span');
+      lockBadge.className = 'site-lock';
+      lockBadge.textContent = `🔒 ${formatMins(Math.ceil(remainingMs / 60000))}`;
+      li.appendChild(lockBadge);
+    }
+
     list.appendChild(li);
   });
 }
@@ -200,7 +233,7 @@ document.getElementById('addBtn').addEventListener('click', async () => {
   if (!target.startsWith('http')) target = 'https://' + target;
   const current = await getBlockedSites();
   if (current.some(s => s.source === source)) return;
-  current.push({ source, target });
+  current.push({ source, target, addedAt: Date.now() });
   await saveBlockedSites(current);
   renderSiteList(current);
   sourceInput.value = '';
@@ -489,9 +522,10 @@ document.getElementById('soundToggleBtn').addEventListener('click', async () => 
 
 (async () => {
   const [sites, stats, pomoState, notes, goal] = await Promise.all([
-    getBlockedSites(), getStats(), getState(), getNotes(), getGoal()
+    migrateAndGetBlockedSites(), getStats(), getState(), getNotes(), getGoal()
   ]);
   renderSiteList(sites);
+  startSiteLockTick();
   renderStats(stats, pomoState.settings);
   renderPomodoro(pomoState);
   startTick(pomoState);

@@ -111,3 +111,9 @@ export function pickBlockedMessage(stats, pomoStats, randomIndex) {
   candidates.push(...REFLECTIVE_QUESTIONS);
   return candidates[randomIndex % candidates.length];
 }
+
+export const IDLE_RESET_THRESHOLD_MS = 30 * 60 * 1000;
+
+export function decideIdleReturnAction(awayMs, resetThresholdMs = IDLE_RESET_THRESHOLD_MS) {
+  return awayMs >= resetThresholdMs ? 'reset' : 'resume';
+}

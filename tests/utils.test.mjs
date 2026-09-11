@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { findMatch, incrementStats, getDefaultStats, trimHistory, isLocked, migrateBlockedSites, LOCK_DURATION_MS, pickBlockedMessage } from '../utils.js';
+import { findMatch, incrementStats, getDefaultStats, trimHistory, isLocked, migrateBlockedSites, LOCK_DURATION_MS, pickBlockedMessage, decideIdleReturnAction, IDLE_RESET_THRESHOLD_MS } from '../utils.js';
 
 describe('findMatch', () => {
   const sites = [
@@ -180,5 +180,28 @@ describe('pickBlockedMessage', () => {
     const a = pickBlockedMessage(stats, pomoStats, 7);
     const b = pickBlockedMessage(stats, pomoStats, 7);
     assert.deepEqual(a, b);
+  });
+});
+
+describe('decideIdleReturnAction', () => {
+  it('30 dakikadan kısa ayrılıkta "resume" döner', () => {
+    assert.equal(decideIdleReturnAction(29 * 60 * 1000), 'resume');
+  });
+
+  it('tam 30 dakikada "reset" döner (sınır dahil)', () => {
+    assert.equal(decideIdleReturnAction(IDLE_RESET_THRESHOLD_MS), 'reset');
+  });
+
+  it('30 dakikadan uzun ayrılıkta "reset" döner', () => {
+    assert.equal(decideIdleReturnAction(31 * 60 * 1000), 'reset');
+  });
+
+  it('0 ms ayrılıkta "resume" döner', () => {
+    assert.equal(decideIdleReturnAction(0), 'resume');
+  });
+
+  it('özel bir eşik verilirse onu kullanır', () => {
+    assert.equal(decideIdleReturnAction(5000, 10000), 'resume');
+    assert.equal(decideIdleReturnAction(15000, 10000), 'reset');
   });
 });

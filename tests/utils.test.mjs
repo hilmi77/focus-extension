@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { findMatch, incrementStats, getDefaultStats, trimHistory } from '../utils.js';
+import { findMatch, incrementStats, getDefaultStats, trimHistory, isLocked, migrateBlockedSites, LOCK_DURATION_MS } from '../utils.js';
 
 describe('findMatch', () => {
   const sites = [
@@ -78,5 +78,50 @@ describe('trimHistory', () => {
     assert.equal(result['2026-05-01'], undefined);
     assert.equal(result['2026-05-07'], undefined);
     assert.equal(result['2026-05-08'], 5);
+  });
+});
+
+describe('isLocked', () => {
+  const now = 1_700_000_000_000;
+
+  it('addedAt yoksa kilitsizdir', () => {
+    assert.equal(isLocked({ source: 'x.com' }, now), false);
+  });
+
+  it('24 saatten az geçmişse kilitlidir', () => {
+    const site = { source: 'x.com', addedAt: now - (23 * 60 * 60 * 1000) };
+    assert.equal(isLocked(site, now), true);
+  });
+
+  it('tam 24 saat geçmişse kilitsizdir', () => {
+    const site = { source: 'x.com', addedAt: now - LOCK_DURATION_MS };
+    assert.equal(isLocked(site, now), false);
+  });
+
+  it('24 saatten fazla geçmişse kilitsizdir', () => {
+    const site = { source: 'x.com', addedAt: now - (25 * 60 * 60 * 1000) };
+    assert.equal(isLocked(site, now), false);
+  });
+});
+
+describe('migrateBlockedSites', () => {
+  const now = 1_700_000_000_000;
+
+  it('addedAt olmayan kayıtlara now atar', () => {
+    const sites = [{ source: 'x.com', target: 'https://nodejs.org' }];
+    const result = migrateBlockedSites(sites, now);
+    assert.equal(result[0].addedAt, now);
+  });
+
+  it('addedAt olan kayıtlara dokunmaz', () => {
+    const sites = [{ source: 'x.com', target: 'https://nodejs.org', addedAt: 123 }];
+    const result = migrateBlockedSites(sites, now);
+    assert.equal(result[0].addedAt, 123);
+  });
+
+  it('orijinal diziyi mutasyona uğratmaz', () => {
+    const sites = [{ source: 'x.com', target: 'https://nodejs.org' }];
+    migrateBlockedSites(sites, now);
+    assert.equal(sites[0].addedAt, undefined);
   });
 });

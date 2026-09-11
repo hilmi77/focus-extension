@@ -48,3 +48,14 @@ function getPreviousDay(dateStr) {
   d.setDate(d.getDate() - 1);
   return d.toISOString().split('T')[0];
 }
+
+export const LOCK_DURATION_MS = 24 * 60 * 60 * 1000;
+
+export function isLocked(site, now, lockDurationMs = LOCK_DURATION_MS) {
+  if (!site.addedAt) return false;
+  return now - site.addedAt < lockDurationMs;
+}
+
+export function migrateBlockedSites(sites, now) {
+  return sites.map(site => site.addedAt ? site : { ...site, addedAt: now });
+}

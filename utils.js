@@ -59,3 +59,55 @@ export function isLocked(site, now, lockDurationMs = LOCK_DURATION_MS) {
 export function migrateBlockedSites(sites, now) {
   return sites.map(site => site.addedAt ? site : { ...site, addedAt: now });
 }
+
+const REFLECTIVE_QUESTIONS = [
+  { eyebrow: 'dur bir saniye', line1: '10 dakika sonra', line2: 'kendine ne diyeceksin?', sub: 'Bir düşün.' },
+  { eyebrow: 'dur bir saniye', line1: 'Bunu gerçekten', line2: 'şimdi mi yapman lazım?', sub: 'Sonra da yapabilirsin.' },
+  { eyebrow: 'dur bir saniye', line1: 'Az önce ne', line2: 'yapıyordun, hatırlıyor musun?', sub: 'Kaldığın yere dön.' },
+  { eyebrow: 'dur bir saniye', line1: 'Buraya gelmek,', line2: 'asıl istediğin şey miydi?', sub: 'Emin misin?' },
+  { eyebrow: 'dur bir saniye', line1: '5 dakika sonra', line2: 'pişman olacak mısın?', sub: 'Şimdi karar ver.' },
+];
+
+function streakMessage(streak) {
+  return {
+    eyebrow: 'dur bir saniye',
+    line1: `${streak} günlük`,
+    line2: 'zincirini kırma.',
+    sub: 'Bugün de devam et, yarın daha kolay olacak.',
+  };
+}
+
+function todayCountMessage(todayCount) {
+  return {
+    eyebrow: 'yine mi buradasın',
+    line1: 'Bu siteyi bugün',
+    line2: `${todayCount}. kez engelledin.`,
+    sub: 'Bir kez daha dene, gerçekten istersen çık.',
+  };
+}
+
+function formatFocusMins(m) {
+  const h = Math.floor(m / 60);
+  const rem = m % 60;
+  if (h === 0) return `${rem}dk`;
+  if (rem === 0) return `${h}sa`;
+  return `${h}sa ${rem}dk`;
+}
+
+function focusMessage(todayFocusMins) {
+  return {
+    eyebrow: 'dur bir saniye',
+    line1: `Bugün ${formatFocusMins(todayFocusMins)}`,
+    line2: 'odaklandın.',
+    sub: 'Bunu şimdi boşa harcama.',
+  };
+}
+
+export function pickBlockedMessage(stats, pomoStats, randomIndex) {
+  const candidates = [];
+  if (stats?.streak >= 2) candidates.push(streakMessage(stats.streak));
+  if (stats?.todayCount >= 1) candidates.push(todayCountMessage(stats.todayCount));
+  if (pomoStats?.todayFocusMins >= 15) candidates.push(focusMessage(pomoStats.todayFocusMins));
+  candidates.push(...REFLECTIVE_QUESTIONS);
+  return candidates[randomIndex % candidates.length];
+}

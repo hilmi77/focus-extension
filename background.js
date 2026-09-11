@@ -1,7 +1,7 @@
 
 
-import { findMatch, getDefaultStats, incrementStats } from './utils.js';
-import { handlePomodoroAlarm, getState, getPomodoroStats } from './pomodoro.js';
+import { findMatch, getDefaultStats, incrementStats, decideIdleReturnAction } from './utils.js';
+import { handlePomodoroAlarm, getState, getPomodoroStats, pausePomodoro, resumePomodoro, stopPomodoro } from './pomodoro.js';
 import { getSoundSettings, getSoundRuntime, RADIO_STREAM_URL } from './sound.js';
 
 const POMODORO_BLOCKED = ['x.com', 'twitter.com', 'instagram.com'];
@@ -147,4 +147,51 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   } else {
     await handlePomodoroAlarm(alarm.name);
   }
+});
+
+const IDLE_DETECTION_SECONDS = 300; // 5 dakika
+chrome.idle.setDetectionInterval(IDLE_DETECTION_SECONDS);
+
+chrome.idle.onStateChanged.addListener(async (state) => {
+  const pomo = await getState();
+
+  if (state !== 'active') {
+    // 'idle' veya 'locked'
+    if (pomo.active) {
+      await pausePomodoro();
+      await chrome.storage.local.set({ idleSince: Date.now() });
+      await syncAudio();
+    }
+    return;
+  }
+
+  // state === 'active': kullanıcı geri döndü
+  const { idleSince } = await chrome.storage.local.get({ idleSince: null });
+  if (idleSince == null) return; // bu duraklatma idle tespitinden kaynaklanmadı
+
+  await chrome.storage.local.remove('idleSince');
+  const current = await getState();
+  if (!current.paused) return; // kullanıcı zaten manuel müdahale etmiş
+
+  const action = decideIdleReturnAction(Date.now() - idleSince);
+  if (action === 'resume') {
+    await resumePomodoro();
+    chrome.notifications.create(`pomo-idle-resume-${Date.now()}`, {
+      type: 'basic',
+      iconUrl: chrome.runtime.getURL('icons/icon48.png'),
+      title: '👋 Tekrar hoş geldin',
+      message: 'Bir süre uzaktaydın, Pomodoro kaldığı yerden devam ediyor.',
+      priority: 2,
+    });
+  } else {
+    await stopPomodoro();
+    chrome.notifications.create(`pomo-idle-reset-${Date.now()}`, {
+      type: 'basic',
+      iconUrl: chrome.runtime.getURL('icons/icon48.png'),
+      title: '🍅 Pomodoro sıfırlandı',
+      message: 'Uzun süre uzaktaydın, yarım kalan tur sıfırlandı. Bugünkü ilerlemen korundu — yeni bir tur başlatabilirsin.',
+      priority: 2,
+    });
+  }
+  await syncAudio();
 });

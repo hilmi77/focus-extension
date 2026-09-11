@@ -388,6 +388,29 @@ canvas {
 
 .goal-reset-btn:hover { color: #ef4444; }
 
+.streak-chain {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.streak-cell {
+  flex: 1;
+  height: 14px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  transition: background 0.2s;
+}
+
+.streak-cell.met {
+  background: #22c55e;
+}
+
+.streak-cell.today {
+  outline: 1.5px solid #6366f1;
+  outline-offset: 1px;
+}
+
 /* ── Notes ──────────────────────────────────────────────────── */
 .notes-header {
   display: flex;

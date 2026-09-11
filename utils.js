@@ -121,3 +121,17 @@ export const IDLE_RESET_THRESHOLD_MS = 30 * 60 * 1000;
 export function decideIdleReturnAction(awayMs, resetThresholdMs = IDLE_RESET_THRESHOLD_MS) {
   return awayMs >= resetThresholdMs ? 'reset' : 'resume';
 }
+
+export function buildStreakChain(pomoHistory, todayDate, todayRounds, dailyGoal) {
+  const days = [];
+  const base = new Date(todayDate + 'T12:00:00');
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(base);
+    d.setDate(d.getDate() - i);
+    const date = d.toISOString().split('T')[0];
+    const isToday = date === todayDate;
+    const rounds = isToday ? todayRounds : (pomoHistory[date] ?? 0);
+    days.push({ date, rounds, goalMet: rounds >= dailyGoal, isToday });
+  }
+  return days;
+}

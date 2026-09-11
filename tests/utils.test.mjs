@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { findMatch, incrementStats, getDefaultStats, trimHistory, isLocked, migrateBlockedSites, LOCK_DURATION_MS, pickBlockedMessage, decideIdleReturnAction, IDLE_RESET_THRESHOLD_MS } from '../utils.js';
+import { findMatch, incrementStats, getDefaultStats, trimHistory, isLocked, migrateBlockedSites, LOCK_DURATION_MS, pickBlockedMessage, decideIdleReturnAction, IDLE_RESET_THRESHOLD_MS, buildStreakChain } from '../utils.js';
 
 describe('findMatch', () => {
   const sites = [
@@ -245,5 +245,43 @@ describe('decideIdleReturnAction', () => {
   it('özel bir eşik verilirse onu kullanır', () => {
     assert.equal(decideIdleReturnAction(5000, 10000), 'resume');
     assert.equal(decideIdleReturnAction(15000, 10000), 'reset');
+  });
+});
+
+describe('buildStreakChain', () => {
+  it('7 gün döner, en eski en başta en yeni (bugün) en sonda', () => {
+    const chain = buildStreakChain({}, '2026-05-14', 0, 8);
+    assert.equal(chain.length, 7);
+    assert.equal(chain[6].date, '2026-05-14');
+    assert.equal(chain[0].date, '2026-05-08');
+  });
+
+  it('sadece son gün isToday=true olur', () => {
+    const chain = buildStreakChain({}, '2026-05-14', 0, 8);
+    assert.equal(chain[6].isToday, true);
+    assert.equal(chain[0].isToday, false);
+  });
+
+  it('bugünün turu todayRounds parametresinden gelir, pomoHistory yoksayılır', () => {
+    const chain = buildStreakChain({ '2026-05-14': 999 }, '2026-05-14', 5, 8);
+    assert.equal(chain[6].rounds, 5);
+  });
+
+  it('geçmiş günlerin turu pomoHistory\'den gelir, yoksa 0', () => {
+    const history = { '2026-05-13': 8, '2026-05-11': 3 };
+    const chain = buildStreakChain(history, '2026-05-14', 5, 8);
+    assert.equal(chain[5].date, '2026-05-13');
+    assert.equal(chain[5].rounds, 8);
+    assert.equal(chain[3].date, '2026-05-11');
+    assert.equal(chain[3].rounds, 3);
+    assert.equal(chain[4].rounds, 0);
+  });
+
+  it('goalMet, o günün turu hedefe ulaştıysa true olur', () => {
+    const history = { '2026-05-13': 8, '2026-05-12': 3 };
+    const chain = buildStreakChain(history, '2026-05-14', 8, 8);
+    assert.equal(chain[5].goalMet, true);
+    assert.equal(chain[4].goalMet, false);
+    assert.equal(chain[6].goalMet, true);
   });
 });

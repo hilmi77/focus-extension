@@ -1,3 +1,5 @@
+import { trimHistory } from './utils.js';
+
 const ALARM_NAME = 'pomodoro-phase-end';
 
 const DEFAULT_STATE = {
@@ -102,18 +104,29 @@ export async function handlePomodoroAlarm(alarmName) {
 
 async function recordCompletedSession(workMins) {
   const today = new Date().toISOString().split('T')[0];
-  const { pomoStats = { todayDate: null, todayRounds: 0, todayFocusMins: 0 } } =
-    await chrome.storage.local.get({ pomoStats: null });
+  const { pomoStats = { todayDate: null, todayRounds: 0, todayFocusMins: 0 }, pomoHistory = {} } =
+    await chrome.storage.local.get({ pomoStats: null, pomoHistory: {} });
   const base = pomoStats && pomoStats.todayDate === today
     ? pomoStats
     : { todayDate: today, todayRounds: 0, todayFocusMins: 0 };
+
+  const newHistory = pomoStats && pomoStats.todayDate && pomoStats.todayDate !== today
+    ? trimHistory({ ...pomoHistory, [pomoStats.todayDate]: pomoStats.todayRounds }, today)
+    : pomoHistory;
+
   await chrome.storage.local.set({
     pomoStats: {
       todayDate: today,
       todayRounds: base.todayRounds + 1,
       todayFocusMins: base.todayFocusMins + workMins,
     },
+    pomoHistory: newHistory,
   });
+}
+
+export async function getPomodoroHistory() {
+  const { pomoHistory = {} } = await chrome.storage.local.get({ pomoHistory: {} });
+  return pomoHistory;
 }
 
 export async function getPomodoroStats() {

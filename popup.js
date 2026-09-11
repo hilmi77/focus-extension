@@ -1,5 +1,5 @@
-import { isLocked, migrateBlockedSites, LOCK_DURATION_MS } from './utils.js';
-import { getState, startPomodoro, stopPomodoro, pausePomodoro, resumePomodoro, updateSettings, getPomodoroStats } from './pomodoro.js';
+import { isLocked, migrateBlockedSites, LOCK_DURATION_MS, buildStreakChain } from './utils.js';
+import { getState, startPomodoro, stopPomodoro, pausePomodoro, resumePomodoro, updateSettings, getPomodoroStats, getPomodoroHistory } from './pomodoro.js';
 import { getSoundSettings, setSoundSettings, getSoundRuntime, setSoundMuted, fetchNowPlaying } from './sound.js';
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -300,22 +300,37 @@ function renderGoal(todayRounds, goal, settings) {
   }
 }
 
+function renderStreakChain(chain) {
+  const container = document.getElementById('streakChain');
+  container.innerHTML = '';
+  chain.forEach(day => {
+    const cell = document.createElement('div');
+    cell.className = 'streak-cell' + (day.goalMet ? ' met' : '') + (day.isToday ? ' today' : '');
+    cell.title = `${day.date}: ${day.rounds} tur`;
+    container.appendChild(cell);
+  });
+}
+
 document.getElementById('goalInput').addEventListener('change', async (e) => {
   const val = Math.max(1, Math.min(20, parseInt(e.target.value) || 1));
   e.target.value = val;
   await chrome.storage.local.set({ dailyGoal: val });
-  const [{ todayRounds }, state] = await Promise.all([getPomodoroStats(), getState()]);
+  const [{ todayRounds }, state, pomoHistory] = await Promise.all([getPomodoroStats(), getState(), getPomodoroHistory()]);
   renderGoal(todayRounds, val, state.settings);
+  const today = new Date().toISOString().split('T')[0];
+  renderStreakChain(buildStreakChain(pomoHistory, today, todayRounds, val));
 });
 
 document.getElementById('goalResetBtn').addEventListener('click', async () => {
   await stopPomodoro();
   chrome.runtime.sendMessage({ type: 'POMO_STOPPED' });
   await chrome.storage.local.remove('pomoStats');
-  const [goal, state] = await Promise.all([getGoal(), getState()]);
+  const [goal, state, pomoHistory] = await Promise.all([getGoal(), getState(), getPomodoroHistory()]);
   renderGoal(0, goal, state.settings);
   renderStats({ todayRounds: 0, todayFocusMins: 0 }, state.settings);
   renderPomodoro(state);
+  const today = new Date().toISOString().split('T')[0];
+  renderStreakChain(buildStreakChain(pomoHistory, today, 0, goal));
 });
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
@@ -521,8 +536,8 @@ document.getElementById('soundToggleBtn').addEventListener('click', async () => 
 // ── Init ─────────────────────────────────────────────────────────────────────
 
 (async () => {
-  const [sites, stats, pomoState, notes, goal] = await Promise.all([
-    migrateAndGetBlockedSites(), getStats(), getState(), getNotes(), getGoal()
+  const [sites, stats, pomoState, notes, goal, pomoHistory] = await Promise.all([
+    migrateAndGetBlockedSites(), getStats(), getState(), getNotes(), getGoal(), getPomodoroHistory()
   ]);
   renderSiteList(sites);
   startSiteLockTick();
@@ -531,5 +546,7 @@ document.getElementById('soundToggleBtn').addEventListener('click', async () => 
   startTick(pomoState);
   renderNotes(notes);
   renderGoal(stats.todayRounds, goal, pomoState.settings);
+  const today = new Date().toISOString().split('T')[0];
+  renderStreakChain(buildStreakChain(pomoHistory, today, stats.todayRounds, goal));
   await refreshSound();
 })();

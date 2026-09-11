@@ -215,7 +215,7 @@ document.getElementById('editSaveBtn').addEventListener('click', async () => {
   if (!source || !target) return;
   if (!target.startsWith('http')) target = 'https://' + target;
   const current = await getBlockedSites();
-  current[editingIndex] = { source, target };
+  current[editingIndex] = { source, target, addedAt: current[editingIndex].addedAt };
   await saveBlockedSites(current);
   closeEdit();
   renderSiteList(current);

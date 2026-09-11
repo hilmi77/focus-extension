@@ -123,6 +123,9 @@ chrome.runtime.onMessage.addListener((msg) => {
   if (['POMO_STARTED', 'POMO_PAUSED', 'POMO_RESUMED', 'POMO_STOPPED', 'SYNC_AUDIO'].includes(msg.type)) {
     syncAudio();
   }
+  if (['POMO_PAUSED', 'POMO_RESUMED', 'POMO_STOPPED', 'POMO_STARTED'].includes(msg.type)) {
+    chrome.storage.local.remove('idleSince');
+  }
 });
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {

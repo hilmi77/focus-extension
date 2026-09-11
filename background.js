@@ -1,7 +1,7 @@
 
 
 import { findMatch, getDefaultStats, incrementStats } from './utils.js';
-import { handlePomodoroAlarm, getState } from './pomodoro.js';
+import { handlePomodoroAlarm, getState, getPomodoroStats } from './pomodoro.js';
 import { getSoundSettings, getSoundRuntime, RADIO_STREAM_URL } from './sound.js';
 
 const POMODORO_BLOCKED = ['x.com', 'twitter.com', 'instagram.com'];
@@ -10,21 +10,40 @@ chrome.webNavigation.onBeforeNavigate.addListener(async ({ tabId, url, frameId }
   if (frameId !== 0) return;
   if (url.startsWith(chrome.runtime.getURL(''))) return;
 
-  const { blockedSites = [] } = await chrome.storage.sync.get({ blockedSites: [] });
-  const match = findMatch(url, blockedSites);
-  if (match) {
-    const target = encodeURIComponent(match.target);
-    await chrome.tabs.update(tabId, { url: chrome.runtime.getURL(`blocked.html?target=${target}`) });
-    await recordBlock();
-    return;
+  const pomo = await getState();
+
+  if (!(await isSiteListUnlocked(pomo))) {
+    const { blockedSites = [] } = await chrome.storage.sync.get({ blockedSites: [] });
+    const match = findMatch(url, blockedSites);
+    if (match) {
+      const target = encodeURIComponent(match.target);
+      await chrome.tabs.update(tabId, { url: chrome.runtime.getURL(`blocked.html?target=${target}`) });
+      await recordBlock();
+      return;
+    }
   }
 
-  const pomo = await getState();
   if (pomo.active && pomo.phase === 'work' && matchesPomodoroList(url)) {
     await chrome.tabs.update(tabId, { url: chrome.runtime.getURL('blocked.html?pomodoro=1') });
     await recordBlock();
   }
 });
+
+// Kullanıcının site listesi, Pomodoro'ya göre zamanlanır (Premack ilkesi):
+// work fazında her zaman engelli; molada serbest; Pomodoro durmuşken günlük
+// hedefe ulaşılmadıysa engelli kalır (erken "dur" ile kaçış işe yaramaz),
+// hedef tamamlandıysa serbest (meşru şekilde günü bitirip rahatlama izni).
+async function isSiteListUnlocked(pomo) {
+  const onBreak = pomo.active && (pomo.phase === 'break' || pomo.phase === 'longBreak');
+  if (onBreak) return true;
+  if (pomo.active) return false;
+
+  const [{ todayRounds }, { dailyGoal = 8 }] = await Promise.all([
+    getPomodoroStats(),
+    chrome.storage.local.get({ dailyGoal: 8 }),
+  ]);
+  return todayRounds >= dailyGoal;
+}
 
 function matchesPomodoroList(url) {
   try {

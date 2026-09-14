@@ -153,7 +153,8 @@ function renderSiteList(sites) {
 
     const target = document.createElement('span');
     target.className = 'site-target';
-    target.textContent = site.target;
+    // hedef siteyi tıklanabilir link olarak göster
+    target.innerHTML = `<a href="${site.target}" target="_blank">${site.target}</a>`;
 
     const locked = isLocked(site, now);
 

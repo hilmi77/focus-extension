@@ -31,7 +31,8 @@ const MAX_CONTEXT_FILE_LINES = 800;
 const IGNORED = [/(^|\/)(yarn\.lock|package-lock\.json|pnpm-lock\.yaml)$/, /\.(png|jpe?g|gif|svg|ico|webp|mp3|wav|woff2?)$/i, /(^|\/)\.DS_Store$/, /^\.idea\//, /^dist\//, /^public\//];
 
 // Model bu kalıpları yasaklamamıza rağmen üretebiliyor; kesinlik taşımayan yorumları kodla eliyoruz.
-const HEDGE = /teyit|emin ol|emin olun|kontrol ed(in|ilmeli)|belirsiz|\bolabilir\b|doğrulanmalı|gözden geçir|dikkat edilmeli|değerlendirilmeli|düşünülebilir|kabul edilebilir/i;
+// Sadece orta/düşük önemdeki yorumlara uygulanır; kritik/yüksek bulgular her durumda gönderilir.
+const HEDGE = /teyit ed|emin olun|emin olunmalı|kontrol edin|kontrol edilmeli|belirsiz|doğrulanmalı|gözden geçirilmeli|değerlendirilmeli|düşünülebilir|kabul edilebilir/i;
 
 if (!owner || !repo || !prNumber || !env.GITHUB_TOKEN) {
   fail('GITHUB_TOKEN, GITHUB_REPOSITORY ve PR_NUMBER gerekli.');
@@ -269,9 +270,9 @@ async function main() {
   const notes = [];
   let hedged = 0;
   for (const c of raw) {
-    if (HEDGE.test(c.body)) {
+    if ((c.severity === 'medium' || c.severity === 'low') && HEDGE.test(c.body)) {
       hedged++;
-      console.log(`Kesin olmayan yorum elendi: ${c.path}:${c.line} — ${c.body.slice(0, 120)}`);
+      console.log(`Kesin olmayan yorum elendi (${c.severity}): ${c.path}:${c.line} — ${c.body.replace(/\n+/g, ' ')}`);
       continue;
     }
     const label = SEVERITY[c.severity] || SEVERITY.medium;

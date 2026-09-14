@@ -199,3 +199,9 @@ chrome.idle.onStateChanged.addListener(async (state) => {
   }
   await syncAudio();
 });
+// Günlük odak süresi: engelli bir siteye gidilmediği her dakika sayaç artar
+let focusMinutesToday = 0;
+setInterval(() => {
+  focusMinutesToday += 1;
+  chrome.action.setBadgeText({ text: String(focusMinutesToday) });
+}, 60 * 1000);

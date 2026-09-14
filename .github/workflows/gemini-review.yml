@@ -21,12 +21,13 @@ on:
         description: 'İncelenecek PR numarası'
         required: true
 
-concurrency:
-  group: '${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}'
-  cancel-in-progress: true
-
 jobs:
   review:
+    # Concurrency job seviyesinde: böylece başka botların (ör. CodeRabbit) PR yorumları
+    # "if" koşuluna takılıp atlanır ve devam eden review'u iptal edemez.
+    concurrency:
+      group: '${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}'
+      cancel-in-progress: true
     if: |-
       (
         github.event_name == 'pull_request' &&

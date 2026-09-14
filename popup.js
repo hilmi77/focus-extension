@@ -65,7 +65,8 @@ function renderNotes(notes) {
 
     const text = document.createElement('span');
     text.className = 'note-text';
-    text.textContent = note.text;
+    // **kalın** yazımını destekle
+    text.innerHTML = note.text.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
 
     const del = document.createElement('button');
     del.className = 'note-delete';

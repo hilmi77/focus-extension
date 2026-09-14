@@ -113,6 +113,7 @@ function buildPrompt({ pr, files, rules }) {
 - Aynı sorun birden fazla yerde varsa ilkine yorum yaz, diğerlerini özette belirt.
 - \`suggestion\` alanına, yorumladığın **tek satırın** yerine geçecek kodu yaz (girinti dahil birebir). Birden fazla satırı etkileyen bir düzeltmeyse \`suggestion\`'ı boş bırak ve kodu \`body\` içinde markdown kod bloğu olarak göster.
 - Önem seviyeleri: "critical" (üretimde hata/güvenlik açığı/veri kaybı), "high" (ciddi hata veya performans sorunu), "medium" (en iyi pratikten sapma, teknik borç), "low" (küçük/stil).
+- \`body\` markdown'dır: paragraflar ve kod blokları arasında gerçek satır sonları (\\n) kullan; kod bloğunu \`\`\`javascript satırı, kod satırları ve kapanış \`\`\` satırı olarak ayrı satırlara yaz.
 - Sorun yoksa \`comments\` boş dizi olsun.
 
 ## Projeye özel kurallar

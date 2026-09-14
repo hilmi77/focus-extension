@@ -65,8 +65,16 @@ function renderNotes(notes) {
 
     const text = document.createElement('span');
     text.className = 'note-text';
-    // **kalın** yazımını destekle
-    text.innerHTML = note.text.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    // **kalın** yazımını destekle (kullanıcı metni HTML olarak yorumlanmasın diye textContent ile)
+    note.text.split(/\*\*(.+?)\*\*/g).forEach((part, index) => {
+      if (index % 2 === 1) {
+        const bold = document.createElement('b');
+        bold.textContent = part;
+        text.appendChild(bold);
+      } else {
+        text.appendChild(document.createTextNode(part));
+      }
+    });
 
     const del = document.createElement('button');
     del.className = 'note-delete';

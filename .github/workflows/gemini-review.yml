@@ -51,6 +51,11 @@ jobs:
         with:
           persist-credentials: false
 
+      # GitHub MCP sunucusunun Docker imajını önceden indir: aksi halde Gemini ilk adımda
+      # araçlar hazır olmadan başlayıp PR'a hiçbir şey yazmadan bitebiliyor.
+      - name: 'Pre-pull GitHub MCP server image'
+        run: docker pull ghcr.io/github/github-mcp-server:v0.27.0
+
       - name: 'Prepare prompt context'
         run: |-
           mkdir -p .gemini

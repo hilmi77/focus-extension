@@ -1,0 +1,52 @@
+# Gemini review script'ini başka bir (public) reponun PR'ı üzerinde denemek için.
+# Review GitHub'a GÖNDERİLMEZ, sadece Actions loguna yazdırılır (PRINT_ONLY).
+# Kullanım: Actions → "🧪 Gemini Review Test" → Run workflow → repo + PR numarası
+
+name: '🧪 Gemini Review Test'
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: 'owner/repo (ör. erdemalpay/davinci-react)'
+        required: true
+      pr_number:
+        description: 'PR numarası'
+        required: true
+      models:
+        description: 'Model sırası (boşsa script varsayılanı)'
+        required: false
+
+jobs:
+  test:
+    runs-on: 'ubuntu-latest'
+    timeout-minutes: 10
+    permissions:
+      contents: 'read'
+    steps:
+      - uses: 'actions/checkout@v4'
+        with:
+          sparse-checkout: |
+            .github
+
+      - uses: 'actions/setup-node@v4'
+        with:
+          node-version: '22'
+
+      - name: 'Hedef reponun kurallar dosyasını al'
+        run: |-
+          curl -fsSL "https://raw.githubusercontent.com/${REPOSITORY}/HEAD/.github/gemini-review-rules.md" -o /tmp/rules.md \
+            || echo "(kurallar dosyası yok)" > /tmp/rules.md
+        env:
+          REPOSITORY: '${{ inputs.repository }}'
+
+      - name: 'Review (sadece log)'
+        run: node .github/scripts/gemini-review.mjs
+        env:
+          PRINT_ONLY: '1'
+          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          GEMINI_API_KEY: '${{ secrets.GEMINI_API_KEY }}'
+          GEMINI_MODELS: '${{ inputs.models }}'
+          REVIEW_REPOSITORY: '${{ inputs.repository }}'
+          PR_NUMBER: '${{ inputs.pr_number }}'
+          REVIEW_RULES_FILE: '/tmp/rules.md'

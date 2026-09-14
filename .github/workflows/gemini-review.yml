@@ -1,12 +1,15 @@
-# Gemini CLI ile otomatik PR review.
-# Kaynak: https://github.com/google-github-actions/run-gemini-cli/tree/main/examples/workflows/pr-review
+# Gemini ile otomatik, Türkçe PR review.
 #
 # Ne zaman çalışır:
 #   - PR açıldığında / yeniden açıldığında / draft'tan "Ready for review"a alındığında
-#   - PR'a "@gemini-cli /review" yorumu yazıldığında (sadece repo sahibi/üye/collaborator)
+#   - PR'a "@gemini-cli /review" ile başlayan yorum yazıldığında (sadece repo sahibi/üye/collaborator)
+#     Örn: "@gemini-cli /review güvenliğe odaklan"
+#   - Actions sekmesinden elle (PR numarası girilerek)
 #
-# Gerekli secret: GEMINI_API_KEY (https://aistudio.google.com/apikey — ücretsiz)
-# İsteğe bağlı variable: GEMINI_MODEL (boşsa gemini-2.5-flash kullanılır)
+# Gerekli secret : GEMINI_API_KEY (https://aistudio.google.com/apikey — ücretsiz)
+# İsteğe bağlı variable: GEMINI_MODELS (virgülle ayrılmış; kota dolarsa sıradaki modele geçilir)
+# Projeye özel kurallar: .github/gemini-review-rules.md
+# Review mantığı: .github/scripts/gemini-review.mjs
 
 name: '🔎 Gemini Review'
 
@@ -23,11 +26,6 @@ on:
 
 jobs:
   review:
-    # Concurrency job seviyesinde: böylece başka botların (ör. CodeRabbit) PR yorumları
-    # "if" koşuluna takılıp atlanır ve devam eden review'u iptal edemez.
-    concurrency:
-      group: '${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}'
-      cancel-in-progress: true
     if: |-
       (
         github.event_name == 'pull_request' &&
@@ -39,6 +37,11 @@ jobs:
         startsWith(github.event.comment.body, '@gemini-cli /review') &&
         contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
       ) || github.event_name == 'workflow_dispatch'
+    # Concurrency job seviyesinde: başka botların (ör. CodeRabbit) PR yorumları "if" koşuluna
+    # takılıp atlanır ve devam eden review'u iptal edemez.
+    concurrency:
+      group: '${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}'
+      cancel-in-progress: true
     runs-on: 'ubuntu-latest'
     timeout-minutes: 10
     permissions:
@@ -46,71 +49,25 @@ jobs:
       issues: 'write'
       pull-requests: 'write'
     steps:
-      - name: 'Checkout repository'
+      # Script ve kurallar varsayılan branch'ten alınır; PR'daki kod çalıştırılmaz
+      # (PR'dan gelen değiştirilmiş bir script'in API anahtarına erişmesini önler).
+      - name: 'Checkout default branch'
         uses: 'actions/checkout@v4'
         with:
+          ref: '${{ github.event.repository.default_branch }}'
           persist-credentials: false
+          sparse-checkout: |
+            .github
 
-      # GitHub MCP sunucusunun Docker imajını önceden indir: aksi halde Gemini ilk adımda
-      # araçlar hazır olmadan başlayıp PR'a hiçbir şey yazmadan bitebiliyor.
-      - name: 'Pre-pull GitHub MCP server image'
-        run: docker pull ghcr.io/github/github-mcp-server:v0.27.0
-
-      - name: 'Prepare prompt context'
-        run: |-
-          mkdir -p .gemini
-          jq -n \
-            --arg repo "${REPOSITORY}" \
-            --arg pr "${PULL_REQUEST_NUMBER}" \
-            --arg context "${ADDITIONAL_CONTEXT}" \
-            '{repository: $repo, pull_request_number: $pr, additional_context: $context}' > .gemini/context.json
-        env:
-          REPOSITORY: '${{ github.repository }}'
-          PULL_REQUEST_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}'
-          # "@gemini-cli /review güvenliğe odaklan" gibi yorumlardaki ek talimat
-          ADDITIONAL_CONTEXT: '${{ github.event.comment.body }}'
-
-      - name: 'Run Gemini pull request review'
-        uses: 'google-github-actions/run-gemini-cli@v0'
-        env:
-          GEMINI_CLI_TRUST_WORKSPACE: 'true'
-          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+      - uses: 'actions/setup-node@v4'
         with:
-          gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
-          gemini_model: "${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}"
-          workflow_name: 'gemini-review'
-          # Sorun ayıklamak için repo variable'ı GEMINI_DEBUG=true yapılabilir
-          gemini_debug: '${{ fromJSON(vars.GEMINI_DEBUG || false) }}'
-          github_pr_number: '${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}'
-          settings: |-
-            {
-              "model": {
-                "maxSessionTurns": 25
-              },
-              "mcpServers": {
-                "github": {
-                  "command": "docker",
-                  "args": [
-                    "run",
-                    "-i",
-                    "--rm",
-                    "-e",
-                    "GITHUB_PERSONAL_ACCESS_TOKEN",
-                    "ghcr.io/github/github-mcp-server:v0.27.0"
-                  ],
-                  "includeTools": [
-                    "add_comment_to_pending_review",
-                    "pull_request_read",
-                    "pull_request_review_write"
-                  ],
-                  "env": {
-                    "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
-                  }
-                }
-              },
-              "tools": {
-                "core": []
-              }
-            }
-          # Projeye özel, Türkçe prompt: .gemini/commands/tr-review.toml (adı Action'ın kendi gemini-review.toml'u ile çakışmasın diye farklı)
-          prompt: '/tr-review'
+          node-version: '22'
+
+      - name: 'Run Gemini review'
+        run: node .github/scripts/gemini-review.mjs
+        env:
+          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          GEMINI_API_KEY: '${{ secrets.GEMINI_API_KEY }}'
+          GEMINI_MODELS: '${{ vars.GEMINI_MODELS }}'
+          PR_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}'
+          EXTRA_INSTRUCTIONS: '${{ github.event.comment.body }}'

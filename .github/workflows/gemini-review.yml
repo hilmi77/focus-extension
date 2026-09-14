@@ -1,0 +1,108 @@
+# Gemini CLI ile otomatik PR review.
+# Kaynak: https://github.com/google-github-actions/run-gemini-cli/tree/main/examples/workflows/pr-review
+#
+# Ne zaman çalışır:
+#   - PR açıldığında / yeniden açıldığında / draft'tan "Ready for review"a alındığında
+#   - PR'a "@gemini-cli /review" yorumu yazıldığında (sadece repo sahibi/üye/collaborator)
+#
+# Gerekli secret: GEMINI_API_KEY (https://aistudio.google.com/apikey — ücretsiz)
+# İsteğe bağlı variable: GEMINI_MODEL (boşsa gemini-2.5-flash kullanılır)
+
+name: '🔎 Gemini Review'
+
+on:
+  pull_request:
+    types: ['opened', 'reopened', 'ready_for_review']
+  issue_comment:
+    types: ['created']
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'İncelenecek PR numarası'
+        required: true
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}'
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: |-
+      (
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.draft == false &&
+        github.event.pull_request.head.repo.fork == false
+      ) || (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        startsWith(github.event.comment.body, '@gemini-cli /review') &&
+        contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+      ) || github.event_name == 'workflow_dispatch'
+    runs-on: 'ubuntu-latest'
+    timeout-minutes: 10
+    permissions:
+      contents: 'read'
+      issues: 'write'
+      pull-requests: 'write'
+    steps:
+      - name: 'Checkout repository'
+        uses: 'actions/checkout@v4'
+        with:
+          persist-credentials: false
+
+      - name: 'Prepare prompt context'
+        run: |-
+          mkdir -p .gemini
+          jq -n \
+            --arg repo "${REPOSITORY}" \
+            --arg pr "${PULL_REQUEST_NUMBER}" \
+            --arg context "${ADDITIONAL_CONTEXT}" \
+            '{repository: $repo, pull_request_number: $pr, additional_context: $context}' > .gemini/context.json
+        env:
+          REPOSITORY: '${{ github.repository }}'
+          PULL_REQUEST_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}'
+          # "@gemini-cli /review güvenliğe odaklan" gibi yorumlardaki ek talimat
+          ADDITIONAL_CONTEXT: '${{ github.event.comment.body }}'
+
+      - name: 'Run Gemini pull request review'
+        uses: 'google-github-actions/run-gemini-cli@v0'
+        env:
+          GEMINI_CLI_TRUST_WORKSPACE: 'true'
+          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        with:
+          gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
+          gemini_model: "${{ vars.GEMINI_MODEL || 'gemini-2.5-flash' }}"
+          workflow_name: 'gemini-review'
+          github_pr_number: '${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}'
+          settings: |-
+            {
+              "model": {
+                "maxSessionTurns": 25
+              },
+              "mcpServers": {
+                "github": {
+                  "command": "docker",
+                  "args": [
+                    "run",
+                    "-i",
+                    "--rm",
+                    "-e",
+                    "GITHUB_PERSONAL_ACCESS_TOKEN",
+                    "ghcr.io/github/github-mcp-server:v0.27.0"
+                  ],
+                  "includeTools": [
+                    "add_comment_to_pending_review",
+                    "pull_request_read",
+                    "pull_request_review_write"
+                  ],
+                  "env": {
+                    "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+                  }
+                }
+              },
+              "tools": {
+                "core": []
+              }
+            }
+          # Projeye özel, Türkçe prompt: .gemini/commands/tr-review.toml (adı Action'ın kendi gemini-review.toml'u ile çakışmasın diye farklı)
+          prompt: '/tr-review'
